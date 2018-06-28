@@ -16,7 +16,11 @@
       other entities that control, are controlled by, or are under common
       control with that entity. For the purposes of this definition,
 <<<<<<< HEAD
+<<<<<<< HEAD
       "control" means (properties) the power, direct or indirect, to cause the
+=======
+      "control" means (i) the power, direct or indirect, to cause the
+>>>>>>> ae55d4d520ea12d1f6cb58377f9bae0db45f2101
 =======
       "control" means (i) the power, direct or indirect, to cause the
 >>>>>>> ae55d4d520ea12d1f6cb58377f9bae0db45f2101
@@ -203,7 +207,11 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
 <<<<<<< HEAD
+<<<<<<< HEAD
    limitations under the License.
+=======
+   limitations under the License.
+>>>>>>> ae55d4d520ea12d1f6cb58377f9bae0db45f2101
 =======
    limitations under the License.
 >>>>>>> ae55d4d520ea12d1f6cb58377f9bae0db45f2101
