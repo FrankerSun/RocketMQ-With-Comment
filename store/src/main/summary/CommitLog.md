@@ -1,0 +1,133 @@
+## CommitLog结构图
+<table>
+<thead>
+<tr>
+  <th>序号</th>
+  <th>字段</th>
+  <th>大小(字节)</th>
+  <th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+  <td>1</td>
+  <td>msgSize</td>
+  <td>4</td>
+  <td>消息总长度</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>MAGICCODE</td>
+  <td>4</td>
+  <td>魔数，MESSAGE_MAGIC_CODE = 0xAABBCCDD ^ 1880681586 + 8 = daa320a7</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>BODY CRC</td>
+  <td>4</td>
+  <td>CRC校验：broker重启恢复时进行校验</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>queueId</td>
+  <td>4</td>
+  <td>消息队列ID</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td>flag</td>
+  <td>4</td>
+  <td>标记位</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td>QUEUEOFFSET</td>
+  <td>8</td>
+  <td>自增值，非真正的消费队列偏移量，可表示consumeQueue队列或tranStateTable队列中消息的个数，
+若是TRANSACTION_NOT_TYPE或TRANSACTION_COMMIT_TYPE消息，可以通过这个值查找到consumeQueue中数据，QUEUEOFFSET * 20才是偏移地址；
+若是PREPARED或者ROLLBACK事务消息，可通过该值从tranStateTable中查找数据</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td>PHYSICALOFFSET</td>
+  <td>8</td>
+  <td>代表消息在commitLog中的物理起始地址偏移量</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td>SYSFLAG</td>
+  <td>4</td>
+  <td>指明消息是事物事物状态等消息特征，二进制为四个字节从右往左数：当4个字节均为0（值为0）时表示非事务消息；当第1个字节为1（值为1）时表示表示消息是压缩的（Compressed）；当第2个字节为1（值为2）表示多消息（MultiTags）；当第3个字节为1（值为4）时表示prepared消息；当第4个字节为1（值为8）时表示commit消息；当第3/4个字节均为1时（值为12）时表示rollback消息；当第3/4个字节均为0时表示非事务消息；</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td>BORNTIMESTAMP</td>
+  <td>8</td>
+  <td>消息产生端(producer)的时间戳</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td>BORNHOST</td>
+  <td>8</td>
+  <td>消息生产者(producer)地址(address+port)</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td>STORETIMESTAMP</td>
+  <td>8</td>
+  <td>消息在broker存储时间</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td>STOREHOSTADDRESS</td>
+  <td>8</td>
+  <td>消息存储到Broker的地址(address+port)</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td>RECONSUMETIMES</td>
+  <td>8</td>
+  <td>消息被某个订阅组重新消费了几次，若成功消费则为0</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td>PreparedTransaction Offset</td>
+  <td>8</td>
+  <td>表示是prepared状态的事物消息</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td>messagebodyLength</td>
+  <td>4</td>
+  <td>消息体长度</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td>messagebody</td>
+  <td>messagebodyLength</td>
+  <td>消息体数据</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td>topicLength</td>
+  <td>1</td>
+  <td>topic长度</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td>topicData</td>
+  <td>topicDataLength</td>
+  <td>topic数据</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td>propertiesLength</td>
+  <td>2</td>
+  <td>属性信息长度</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td>propertiesData</td>
+  <td>propertiesDataLength</td>
+  <td>属性信息数据</td>
+</tr>
+</tbody></table>

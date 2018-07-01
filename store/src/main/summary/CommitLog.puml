@@ -1,0 +1,77 @@
+@startuml
+
+activate CommitLog
+
+activate MappedFileQueue
+autonumber 1
+CommitLog -> MappedFileQueue: getLastMappedFile()
+autonumber stop
+MappedFileQueue --> CommitLog: mapped file
+deactivate MappedFileQueue
+
+|||
+|||
+
+autonumber 2
+CommitLog -> MappedFile: appendMessage(msg:MessageExtBrokerInner,\n cd:AppendMessageCallBack)
+autonumber stop
+
+activate MappedFile
+
+MappedFile -> CommitLog.DefaultAppendMessageCallback : doAppend(long fileFromOffset, ByteBuffer byteBuffer,\n int maxBlank, \
+MessageExtBrokerInner msg)
+
+MappedFile --> CommitLog :     \t\t\t\t\t\t\t result
+
+deactivate MappedFile
+deactivate CommitLog
+
+==  ==
+
+alt 当写入的file已经到文件尾时，则新生成一个新的文件进行写入
+
+CommitLog -> MappedFileQueue: getLastMappedFile()
+activate MappedFileQueue
+MappedFileQueue --> CommitLog : mappedFile
+deactivate MappedFileQueue
+
+CommitLog -> MappedFile : appendMessage(MessageExtBrokerInner msg, AppendMessageCallback cb)
+activate MappedFile
+MappedFile -->  CommitLog : \t\t\t\t\t\t\t result :AppendMessageResult
+deactivate MappedFile
+
+end
+
+==  ==
+
+note left CommitLog #aqua
+  三种刷盘方式
+end note
+
+autonumber 6
+CommitLog -> CommitRealTimeService : wakeup() :void
+
+autonumber stop
+activate CommitRealTimeService
+CommitRealTimeService -> CommitRealTimeService : run() :void
+
+CommitRealTimeService -> MappedFileQueue : commit() : boolean
+
+MappedFileQueue -> MappedFile : commit(int commitLeastPages) : int
+
+activate MappedFile
+MappedFile -> MappedFile : commit(commentLeastPages:int) :void
+
+activate MappedFile
+deactivate MappedFile
+|||
+deactivate MappedFile
+
+CommitRealTimeService --> CommitLog
+
+deactivate CommitRealTimeService
+...
+...
+
+
+@enduml
