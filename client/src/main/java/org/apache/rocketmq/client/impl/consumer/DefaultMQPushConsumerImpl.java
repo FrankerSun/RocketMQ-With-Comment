@@ -556,26 +556,34 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     this.defaultMQPushConsumer.getMessageModel(), this.defaultMQPushConsumer.isUnitMode());
                 this.serviceState = ServiceState.START_FAILED;
 
+                // 检查相关配置
                 this.checkConfig();
 
+                // 复制订阅信息
                 this.copySubscription();
 
+                // 集群模式下 将实例名[若为DEFAULT]换为PID
                 if (this.defaultMQPushConsumer.getMessageModel() == MessageModel.CLUSTERING) {
                     this.defaultMQPushConsumer.changeInstanceNameToPID();
                 }
 
+                // 创建MQClientInstance
                 this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPushConsumer, this.rpcHook);
 
+                // 负载均衡相关
                 this.rebalanceImpl.setConsumerGroup(this.defaultMQPushConsumer.getConsumerGroup());
                 this.rebalanceImpl.setMessageModel(this.defaultMQPushConsumer.getMessageModel());
                 this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPushConsumer.getAllocateMessageQueueStrategy());
                 this.rebalanceImpl.setmQClientFactory(this.mQClientFactory);
 
+                //todo
                 this.pullAPIWrapper = new PullAPIWrapper(
                     mQClientFactory,
                     this.defaultMQPushConsumer.getConsumerGroup(), isUnitMode());
                 this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);
 
+                // 存储消费情况，集群模式使用远端存储RemoteBrokerOffsetStore
+                // 广播模式使用本地存储LocalFileOffsetStore
                 if (this.defaultMQPushConsumer.getOffsetStore() != null) {
                     this.offsetStore = this.defaultMQPushConsumer.getOffsetStore();
                 } else {
@@ -591,8 +599,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     }
                     this.defaultMQPushConsumer.setOffsetStore(this.offsetStore);
                 }
+                // 加载消息进度
                 this.offsetStore.load();
 
+                // 是否有序消费
                 if (this.getMessageListenerInner() instanceof MessageListenerOrderly) {
                     this.consumeOrderly = true;
                     this.consumeMessageService =
@@ -602,9 +612,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     this.consumeMessageService =
                         new ConsumeMessageConcurrentlyService(this, (MessageListenerConcurrently) this.getMessageListenerInner());
                 }
-
+                // 启动消费服务
                 this.consumeMessageService.start();
 
+                // 注册到Broker
                 boolean registerOK = mQClientFactory.registerConsumer(this.defaultMQPushConsumer.getConsumerGroup(), this);
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;
@@ -629,12 +640,25 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 break;
         }
 
+        // 更新Topic订阅
         this.updateTopicSubscribeInfoWhenSubscriptionChanged();
+        // 检测broker状态
         this.mQClientFactory.checkClientInBroker();
+        // 向所有的Broker发送心跳
         this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();
+        // 唤醒负载均衡服务
         this.mQClientFactory.rebalanceImmediately();
     }
 
+    /**
+     * 检查消费者组(consumeGroup)     消息消费方式(messageModel)        消息消费开始偏移量(consumeFromWhere)
+     * 消息队列分配算法(allocateMessageQueueStrategy)                   订阅消息主题(subscription)
+     * 消息回调监听器(messageListener)   顺序消息模式时是否只有一个消息队列
+     * consumeThreadMin                 consumeThreadMax
+     * consumeConcurrentlyMaxSpan       pullThresholdForQueue       pullThresholdForTopic
+     * pullThresholdSizeForQueue        pullThresholdSizeForTopic   pullInterval
+     * consumeMessageBatchMaxSize       pullBatchSize
+     */
     private void checkConfig() throws MQClientException {
         Validators.checkGroup(this.defaultMQPushConsumer.getConsumerGroup());
 
