@@ -85,19 +85,37 @@ import org.slf4j.Logger;
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final Logger log = ClientLogger.getLog();
+    /*配置*/
     private final ClientConfig clientConfig;
+    /*clientInstance在机器上创建顺序*/
     private final int instanceIndex;
+    /*客户端ID*/
     private final String clientId;
+    /*启动时间*/
     private final long bootTimestamp = System.currentTimeMillis();
+    /**
+     * 生产者组： 生产者组----生产者实例( 注册时使用putIfAbsent保证一个机器上只有一个实例 )
+     * 消费者组： 消费者组----消费者实例( 注册时使用putIfAbsent保证一个机器上只有一个实例 )
+     * 管理员组： 管理员组----管理员实例( 注册时使用putIfAbsent保证一个机器上只有一个实例 )
+     * @see MQClientInstance#registerProducer(String, DefaultMQProducerImpl)
+     * @see MQClientInstance#registerConsumer(String, MQConsumerInner)
+     * @see MQClientInstance#registerAdminExt(String, MQAdminExtInner)
+     */
     private final ConcurrentMap<String/* group */, MQProducerInner> producerTable = new ConcurrentHashMap<String, MQProducerInner>();
     private final ConcurrentMap<String/* group */, MQConsumerInner> consumerTable = new ConcurrentHashMap<String, MQConsumerInner>();
     private final ConcurrentMap<String/* group */, MQAdminExtInner> adminExtTable = new ConcurrentHashMap<String, MQAdminExtInner>();
+    /*netty客户端配置*/
     private final NettyClientConfig nettyClientConfig;
+    /*客户端与Broker交互的API*/
     private final MQClientAPIImpl mQClientAPIImpl;
+    /*admin实现*/
     private final MQAdminImpl mQAdminImpl;
+    /*topic路由信息*/
     private final ConcurrentMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<String, TopicRouteData>();
+    /**/
     private final Lock lockNamesrv = new ReentrantLock();
     private final Lock lockHeartbeat = new ReentrantLock();
+    /*broker地址等信息，缓存在本地[broker信息均在nameserver里]*/
     private final ConcurrentMap<String/* Broker Name */, HashMap<Long/* brokerId */, String/* address */>> brokerAddrTable =
         new ConcurrentHashMap<String, HashMap<Long, String>>();
     private final ConcurrentMap<String/* Broker Name */, HashMap<String/* address */, Integer>> brokerVersionTable =
@@ -108,11 +126,17 @@ public class MQClientInstance {
             return new Thread(r, "MQClientFactoryScheduledThread");
         }
     });
+    /* 实现了nettyRemotingProcessor的一个客户端处理器，主要方法为processRequest*/
     private final ClientRemotingProcessor clientRemotingProcessor;
+    /* 获取消息服务：从pullRequestQueue中获取pullRequest*/
     private final PullMessageService pullMessageService;
+    /* 负载均衡*/
     private final RebalanceService rebalanceService;
+    /* 默认生产者*/
     private final DefaultMQProducer defaultMQProducer;
+    /* 消费者状态管理*/
     private final ConsumerStatsManager consumerStatsManager;
+    /* 发送心跳次数*/
     private final AtomicLong sendHeartbeatTimesTotal = new AtomicLong(0);
     private ServiceState serviceState = ServiceState.CREATE_JUST;
     private DatagramSocket datagramSocket;
@@ -232,7 +256,7 @@ public class MQClientInstance {
                     }
                     // Start request-response channel
                     this.mQClientAPIImpl.start();
-                    // Start various schedule tasks
+                    // 开启各种定时任务
                     this.startScheduledTask();
                     // Start pull service
                     this.pullMessageService.start();
@@ -256,6 +280,7 @@ public class MQClientInstance {
     }
 
     private void startScheduledTask() {
+        /* 两分钟查询一次NameServer地址*/
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
@@ -269,7 +294,7 @@ public class MQClientInstance {
                 }
             }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
         }
-
+        /* 30秒[默认值]更新一次路由信息*/
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -281,7 +306,7 @@ public class MQClientInstance {
                 }
             }
         }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS);
-
+        /* 30秒[默认值]发送心跳到broker，清理离线的Broker*/
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -294,7 +319,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
-
+        /* 5秒[默认值]持久化一次偏移量--本地存储/存储到NameServer*/
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -306,7 +331,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000 * 10, this.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
-
+        /* 定期调整一次线程池大小*/
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
