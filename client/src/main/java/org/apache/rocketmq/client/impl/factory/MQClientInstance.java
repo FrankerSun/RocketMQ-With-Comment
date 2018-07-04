@@ -388,7 +388,7 @@ public class MQClientInstance {
     }
 
     /**
-     * Remove offline broker
+     * 移除离线broker
      */
     private void cleanOfflineBroker() {
         try {
@@ -972,6 +972,7 @@ public class MQClientInstance {
         this.rebalanceService.wakeup();
     }
 
+    /* 负载均衡*/
     public void doRebalance() {
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
@@ -993,6 +994,7 @@ public class MQClientInstance {
         return this.consumerTable.get(group);
     }
 
+    /* 查找broker地址 -- 同findBrokerAddressInSubscribe、findBrokerAddressInPublish*/
     public FindBrokerResult findBrokerAddressInAdmin(final String brokerName) {
         String brokerAddr = null;
         boolean slave = false;
@@ -1062,6 +1064,7 @@ public class MQClientInstance {
         return null;
     }
 
+    /* 查看broker版本*/
     public int findBrokerVersion(String brokerName, String brokerAddr) {
         if (this.brokerVersionTable.containsKey(brokerName)) {
             if (this.brokerVersionTable.get(brokerName).containsKey(brokerAddr)) {
@@ -1071,6 +1074,7 @@ public class MQClientInstance {
         return 0;
     }
 
+    /* 查找消费者集合，用于负载均衡*/
     public List<String> findConsumerIdList(final String topic, final String group) {
         String brokerAddr = this.findBrokerAddrByTopic(topic);
         if (null == brokerAddr) {
@@ -1089,6 +1093,7 @@ public class MQClientInstance {
         return null;
     }
 
+    /* 根据topic查询broker地址--优先选择master*/
     public String findBrokerAddrByTopic(final String topic) {
         TopicRouteData topicRouteData = this.topicRouteTable.get(topic);
         if (topicRouteData != null) {
@@ -1103,6 +1108,7 @@ public class MQClientInstance {
         return null;
     }
 
+    /* 重置偏移量：*/
     public void resetOffset(String topic, String group, Map<MessageQueue, Long> offsetTable) {
         DefaultMQPushConsumerImpl consumer = null;
         try {
@@ -1196,6 +1202,7 @@ public class MQClientInstance {
         return topicRouteTable;
     }
 
+    /* 调用Consumer[register]进行消费*/
     public ConsumeMessageDirectlyResult consumeMessageDirectly(final MessageExt msg,
         final String consumerGroup,
         final String brokerName) {
@@ -1210,6 +1217,7 @@ public class MQClientInstance {
         return null;
     }
 
+    /* 获取消费者运行信息*/
     public ConsumerRunningInfo consumerRunningInfo(final String consumerGroup) {
         MQConsumerInner mqConsumerInner = this.consumerTable.get(consumerGroup);
 
