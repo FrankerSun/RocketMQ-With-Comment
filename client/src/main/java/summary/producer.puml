@@ -1,0 +1,47 @@
+@startuml
+actor DefaultMQProducerImpl
+
+'boundary  Foo2
+'control  Foo3
+'entity  Foo4
+'database  Foo5
+'collections  Foo6
+
+note left DefaultMQProducerImpl :start
+
+DefaultMQProducerImpl -> Validators: checkConfig
+
+activate DefaultMQProducerImpl #Crimson
+
+Validators -[#0000FF]-> DefaultMQProducerImpl : result
+
+DefaultMQProducerImpl -> MQClientManager: getInstance
+activate MQClientManager
+
+MQClientManager -> MQClientManager  : getAndCreateMQClientInstance
+create MQClientInstance
+MQClientManager -> MQClientInstance  : \t    new
+deactivate MQClientManager
+
+MQClientManager -[#0000FF]-> DefaultMQProducerImpl  : mQClientFactory: MQClientInstance
+
+DefaultMQProducerImpl -> MQClientInstance: registerProducer
+DefaultMQProducerImpl -> MQClientInstance: start
+
+activate MQClientInstance
+
+MQClientInstance -> MQClientAPIImpl : start
+MQClientInstance -> MQClientInstance : startScheduledTask
+MQClientInstance -> PullMessageService : start
+MQClientInstance -> RebalanceService : start
+MQClientInstance -> DefaultMQProducerImpl : start
+
+DefaultMQProducerImpl -> MQClientInstance : sendHeartbeatToAllBrokerWithLock
+
+deactivate DefaultMQProducerImpl
+deactivate MQClientInstance
+
+||30||
+== start 结束 ==
+||30||
+@enduml
