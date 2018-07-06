@@ -18,11 +18,20 @@
 package org.apache.rocketmq.client.latency;
 
 public interface LatencyFaultTolerance<T> {
+
+    /**
+     * @param name brokerName
+     * @param currentLatency 延迟
+     * @param notAvailableDuration 不可用时间
+     */
     void updateFaultItem(final T name, final long currentLatency, final long notAvailableDuration);
 
     boolean isAvailable(final T name);
 
     void remove(final T name);
 
+    /**
+     * 选择队列前一半中一个，也就是相对来说比较好的队列
+     */
     T pickOneAtLeast();
 }

@@ -33,6 +33,7 @@ public class ThreadLocalIndex {
         }
 
         index = Math.abs(index + 1);
+        // Math.abs(Integer.MAX_VALUE + 1) = -2147483648
         if (index < 0)
             index = 0;
 

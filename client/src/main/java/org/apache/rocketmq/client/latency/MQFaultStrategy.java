@@ -56,8 +56,10 @@ public class MQFaultStrategy {
     }
 
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
+        /* 支持容错*/
         if (this.sendLatencyFaultEnable) {
             try {
+                /* 针对容错，选择一个较好的broker，并从中选择一个队列返回[优先选择lastBrokerName里的队列]*/
                 int index = tpInfo.getSendWhichQueue().getAndIncrement();
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
                     int pos = Math.abs(index++) % tpInfo.getMessageQueueList().size();
@@ -69,7 +71,7 @@ public class MQFaultStrategy {
                             return mq;
                     }
                 }
-
+                /* 针对容错，选择一个较好的broker，并从中选择一个队列返回*/
                 final String notBestBroker = latencyFaultTolerance.pickOneAtLeast();
                 int writeQueueNums = tpInfo.getQueueIdByBroker(notBestBroker);
                 if (writeQueueNums > 0) {
@@ -85,13 +87,14 @@ public class MQFaultStrategy {
             } catch (Exception e) {
                 log.error("Error occurred when selecting message queue", e);
             }
-
+            /* 随机选择一个队列*/
             return tpInfo.selectOneMessageQueue();
         }
 
         return tpInfo.selectOneMessageQueue(lastBrokerName);
     }
 
+    /* 更新延迟容错时间*/
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
         if (this.sendLatencyFaultEnable) {
             long duration = computeNotAvailableDuration(isolation ? 30000 : currentLatency);
