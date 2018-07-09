@@ -74,6 +74,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         }
 
         if (!tmpList.isEmpty()) {
+            // 针对反快排
             Collections.shuffle(tmpList);
 
             Collections.sort(tmpList);
@@ -98,7 +99,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
             '}';
     }
 
-    /* bokerName    可用时间戳*/
+    /* brokerName    可用时间戳*/
     class FaultItem implements Comparable<FaultItem> {
         private final String name;
         private volatile long currentLatency;
