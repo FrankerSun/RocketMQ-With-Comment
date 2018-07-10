@@ -44,25 +44,30 @@ import sun.nio.ch.DirectBuffer;
 public class MappedFile extends ReferenceResource {
     public static final int OS_PAGE_SIZE = 1024 * 4;
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
-
+    // 映射虚拟拟内存大小
     private static final AtomicLong TOTAL_MAPPED_VIRTUAL_MEMORY = new AtomicLong(0);
-
+    // 映射文件个数
     private static final AtomicInteger TOTAL_MAPPED_FILES = new AtomicInteger(0);
+    // 写入位置
     protected final AtomicInteger wrotePosition = new AtomicInteger(0);
-    //ADD BY ChenYang
+    // 提交位置[参考的netty?]
     protected final AtomicInteger committedPosition = new AtomicInteger(0);
+    // 刷盘位置
     private final AtomicInteger flushedPosition = new AtomicInteger(0);
+    // 映射文件大小
     protected int fileSize;
     protected FileChannel fileChannel;
-    /**
-     * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
-     */
+    //消息会先放入到该Buffer，然后会在writeBUffer不为空时选择合适的时机写入FileChannel
     protected ByteBuffer writeBuffer = null;
+    //
     protected TransientStorePool transientStorePool = null;
     private String fileName;
+    // 文件在queue中的偏移量: 0 => queue中第1个文件，mapedFileSize=>queue中第2个文件
     private long fileFromOffset;
     private File file;
+    // 映射的Buffer[内存 memory-mapped]
     private MappedByteBuffer mappedByteBuffer;
+    // 最后一条消息保存时间
     private volatile long storeTimestamp = 0;
     private boolean firstCreateInQueue = false;
 
@@ -198,6 +203,7 @@ public class MappedFile extends ReferenceResource {
         return appendMessagesInner(messageExtBatch, cb);
     }
 
+    /* 写 */
     public AppendMessageResult appendMessagesInner(final MessageExt messageExt, final AppendMessageCallback cb) {
         assert messageExt != null;
         assert cb != null;
@@ -209,8 +215,10 @@ public class MappedFile extends ReferenceResource {
             byteBuffer.position(currentPos);
             AppendMessageResult result = null;
             if (messageExt instanceof MessageExtBrokerInner) {
+                // [Important]
                 result = cb.doAppend(this.getFileFromOffset(), byteBuffer, this.fileSize - currentPos, (MessageExtBrokerInner) messageExt);
             } else if (messageExt instanceof MessageExtBatch) {
+                // [Important]
                 result = cb.doAppend(this.getFileFromOffset(), byteBuffer, this.fileSize - currentPos, (MessageExtBatch) messageExt);
             } else {
                 return new AppendMessageResult(AppendMessageStatus.UNKNOWN_ERROR);
@@ -267,9 +275,7 @@ public class MappedFile extends ReferenceResource {
         return false;
     }
 
-    /**
-     * @return The current flushed position
-     */
+    /* 刷盘，返回当前刷盘位置*/
     public int flush(final int flushLeastPages) {
         if (this.isAbleToFlush(flushLeastPages)) {
             if (this.hold()) {
@@ -278,8 +284,10 @@ public class MappedFile extends ReferenceResource {
                 try {
                     //We only append data to fileChannel or mappedByteBuffer, never both.
                     if (writeBuffer != null || this.fileChannel.position() != 0) {
+                        //只将文件数据刷盘
                         this.fileChannel.force(false);
                     } else {
+                        //同时将文件数据和元数据刷盘
                         this.mappedByteBuffer.force();
                     }
                 } catch (Throwable e) {
@@ -310,7 +318,7 @@ public class MappedFile extends ReferenceResource {
             }
         }
 
-        // All dirty data has been committed to FileChannel.
+        // 所有的dirty data都已提交到FileChannel里后归还writeBuffer(dirty data这里应该为无用的数据)
         if (writeBuffer != null && this.transientStorePool != null && this.fileSize == this.committedPosition.get()) {
             this.transientStorePool.returnBuffer(writeBuffer);
             this.writeBuffer = null;
@@ -337,6 +345,10 @@ public class MappedFile extends ReferenceResource {
         }
     }
 
+    /**
+     * 执行刷盘的条件：文件被写满/未刷盘数据部分大于最小分页/新写入了数据
+     * @param flushLeastPages flush最小分页
+     */
     private boolean isAbleToFlush(final int flushLeastPages) {
         int flush = this.flushedPosition.get();
         int write = getReadPosition();
@@ -379,6 +391,7 @@ public class MappedFile extends ReferenceResource {
         return this.fileSize == this.wrotePosition.get();
     }
 
+    /* 随机读取mappedByteBuffer，使用netty MappedByteBuffer.slice返回SelectMappedBufferResult*/
     public SelectMappedBufferResult selectMappedBuffer(int pos, int size) {
         int readPosition = getReadPosition();
         if ((pos + size) <= readPosition) {
@@ -401,6 +414,7 @@ public class MappedFile extends ReferenceResource {
         return null;
     }
 
+    /* 随机读取mappedByteBuffer*/
     public SelectMappedBufferResult selectMappedBuffer(int pos) {
         int readPosition = getReadPosition();
         if (pos < readPosition && pos >= 0) {
@@ -484,6 +498,7 @@ public class MappedFile extends ReferenceResource {
         this.committedPosition.set(pos);
     }
 
+    /* 预热？*/
     public void warmMappedFile(FlushDiskType type, int pages) {
         long beginTime = System.currentTimeMillis();
         ByteBuffer byteBuffer = this.mappedByteBuffer.slice();
@@ -491,7 +506,7 @@ public class MappedFile extends ReferenceResource {
         long time = System.currentTimeMillis();
         for (int i = 0, j = 0; i < this.fileSize; i += MappedFile.OS_PAGE_SIZE, j++) {
             byteBuffer.put(i, (byte) 0);
-            // force flush when flush disk type is sync
+            // 同步刷盘时强制刷盘
             if (type == FlushDiskType.SYNC_FLUSH) {
                 if ((i / OS_PAGE_SIZE) - (flush / OS_PAGE_SIZE) >= pages) {
                     flush = i;
@@ -547,6 +562,7 @@ public class MappedFile extends ReferenceResource {
         this.firstCreateInQueue = firstCreateInQueue;
     }
 
+    /* 锁内存*/
     public void mlock() {
         final long beginTime = System.currentTimeMillis();
         final long address = ((DirectBuffer) (this.mappedByteBuffer)).address();
@@ -562,6 +578,7 @@ public class MappedFile extends ReferenceResource {
         }
     }
 
+    /* 解锁内存*/
     public void munlock() {
         final long beginTime = System.currentTimeMillis();
         final long address = ((DirectBuffer) (this.mappedByteBuffer)).address();

@@ -39,6 +39,7 @@ public interface LibC extends Library {
     /* synchronous memory sync */
     int MS_SYNC = 0x0004;
 
+    //内核实现锁定内存：the pages are guaranteed to stay in RAM
     int mlock(Pointer var1, NativeLong var2);
 
     int munlock(Pointer var1, NativeLong var2);
