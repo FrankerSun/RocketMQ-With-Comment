@@ -35,6 +35,7 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 
 public class TransactionProducer {
+
     private static int threadCount;
     private static int messageSize;
     private static boolean ischeck;
@@ -92,12 +93,15 @@ public class TransactionProducer {
             }
         }, 10000, 10000);
 
+        // 消息回查：由于网络闪断、生产者应用重启等原因，导致某条事务消息的二次确认丢失，
+        // MQ 服务端通过扫描发现某条消息长期处于“半消息”时，需要主动向消息生产者询问该消息的最终状态（Commit 或是 Rollback）。
         final TransactionCheckListener transactionCheckListener =
             new TransactionCheckListenerBImpl(ischeckffalse, statsBenchmark);
         final TransactionMQProducer producer = new TransactionMQProducer("benchmark_transaction_producer");
         producer.setInstanceName(Long.toString(System.currentTimeMillis()));
         producer.setTransactionCheckListener(transactionCheckListener);
         producer.setDefaultTopicQueueNums(1000);
+        producer.setNamesrvAddr("127.0.0.1:9876");
         producer.start();
 
         final TransactionExecuterBImpl tranExecuter = new TransactionExecuterBImpl(ischeck);
@@ -110,8 +114,8 @@ public class TransactionProducer {
                         try {
                             // Thread.sleep(1000);
                             final long beginTimestamp = System.currentTimeMillis();
-                            SendResult sendResult =
-                                producer.sendMessageInTransaction(msg, tranExecuter, null);
+                            // 发送事务消息
+                            SendResult sendResult = producer.sendMessageInTransaction(msg, tranExecuter, null);
                             if (sendResult != null) {
                                 statsBenchmark.getSendRequestSuccessCount().incrementAndGet();
                                 statsBenchmark.getReceiveResponseSuccessCount().incrementAndGet();
@@ -124,8 +128,9 @@ public class TransactionProducer {
                                 boolean updated =
                                     statsBenchmark.getSendMessageMaxRT().compareAndSet(prevMaxRT,
                                         currentRT);
-                                if (updated)
+                                if (updated) {
                                     break;
+                                }
 
                                 prevMaxRT = statsBenchmark.getSendMessageMaxRT().get();
                             }
@@ -171,11 +176,11 @@ class TransactionExecuterBImpl implements LocalTransactionExecuter {
 }
 
 class TransactionCheckListenerBImpl implements TransactionCheckListener {
+
     private boolean ischeckffalse;
     private StatsBenchmarkTProducer statsBenchmarkTProducer;
 
-    public TransactionCheckListenerBImpl(boolean ischeckffalse,
-        StatsBenchmarkTProducer statsBenchmarkTProducer) {
+    public TransactionCheckListenerBImpl(boolean ischeckffalse, StatsBenchmarkTProducer statsBenchmarkTProducer) {
         this.ischeckffalse = ischeckffalse;
         this.statsBenchmarkTProducer = statsBenchmarkTProducer;
     }
@@ -193,6 +198,7 @@ class TransactionCheckListenerBImpl implements TransactionCheckListener {
 }
 
 class StatsBenchmarkTProducer {
+
     private final AtomicLong sendRequestSuccessCount = new AtomicLong(0L);
 
     private final AtomicLong sendRequestFailedCount = new AtomicLong(0L);
@@ -208,7 +214,7 @@ class StatsBenchmarkTProducer {
     private final AtomicLong checkRequestSuccessCount = new AtomicLong(0L);
 
     public Long[] createSnapshot() {
-        Long[] snap = new Long[] {
+        Long[] snap = new Long[]{
             System.currentTimeMillis(),
             this.sendRequestSuccessCount.get(),
             this.sendRequestFailedCount.get(),

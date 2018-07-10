@@ -22,17 +22,19 @@ import java.util.Set;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.PullResult;
 import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 public class PullConsumer {
     private static final Map<MessageQueue, Long> OFFSE_TABLE = new HashMap<MessageQueue, Long>();
 
     public static void main(String[] args) throws MQClientException {
-        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("please_rename_unique_group_name_5");
+        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("group");
 
+        consumer.setNamesrvAddr("127.0.0.1:9876");
         consumer.start();
 
-        Set<MessageQueue> mqs = consumer.fetchSubscribeMessageQueues("TopicTest1");
+        Set<MessageQueue> mqs = consumer.fetchSubscribeMessageQueues("TopicTest");
         for (MessageQueue mq : mqs) {
             System.out.printf("Consume from the queue: %s%n", mq);
             SINGLE_MQ:
@@ -44,6 +46,7 @@ public class PullConsumer {
                     putMessageQueueOffset(mq, pullResult.getNextBeginOffset());
                     switch (pullResult.getPullStatus()) {
                         case FOUND:
+                            dealMessage(pullResult);
                             break;
                         case NO_MATCHED_MSG:
                             break;
@@ -61,6 +64,13 @@ public class PullConsumer {
         }
 
         consumer.shutdown();
+    }
+
+    private static void dealMessage(PullResult pullResult) {
+
+        for (MessageExt messageExt : pullResult.getMsgFoundList()) {
+            System.out.println(new String(messageExt.getBody()));
+        }
     }
 
     private static long getMessageQueueOffset(MessageQueue mq) {
