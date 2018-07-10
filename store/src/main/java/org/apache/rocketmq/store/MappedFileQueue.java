@@ -144,6 +144,7 @@ public class MappedFileQueue {
         }
     }
 
+    /* 加载store目录下的CommitLog文件*/
     public boolean load() {
         File dir = new File(this.storePath);
         File[] files = dir.listFiles();
@@ -152,6 +153,7 @@ public class MappedFileQueue {
             Arrays.sort(files);
             for (File file : files) {
 
+                // 忽略与mappedFileSize大小不同的文件
                 if (file.length() != this.mappedFileSize) {
                     log.warn(file + "\t" + file.length()
                         + " length not matched message store config value, ignore it");
@@ -427,6 +429,7 @@ public class MappedFileQueue {
         MappedFile mappedFile = this.findMappedFileByOffset(this.flushedWhere, this.flushedWhere == 0);
         if (mappedFile != null) {
             long tmpTimeStamp = mappedFile.getStoreTimestamp();
+            //真实刷盘
             int offset = mappedFile.flush(flushLeastPages);
             long where = mappedFile.getFileFromOffset() + offset;
             result = where == this.flushedWhere;
