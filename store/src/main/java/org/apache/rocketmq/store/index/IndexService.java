@@ -44,6 +44,7 @@ public class IndexService {
     private final int indexNum;
     private final String storePath;
     private final ArrayList<IndexFile> indexFileList = new ArrayList<IndexFile>();
+    // 读写锁
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
     public IndexService(final DefaultMessageStore store) {

@@ -127,14 +127,16 @@ public class FiltersrvStartup {
             configurator.doConfigure(filtersrvConfig.getRocketmqHome() + "/conf/logback_filtersrv.xml");
             log = LoggerFactory.getLogger(LoggerName.FILTERSRV_LOGGER_NAME);
 
-            final FiltersrvController controller =
-                new FiltersrvController(filtersrvConfig, nettyServerConfig);
+            // 根据相关配置项生成FiltersrvController
+            final FiltersrvController controller = new FiltersrvController(filtersrvConfig, nettyServerConfig);
+            // Controller初始化
             boolean initResult = controller.initialize();
             if (!initResult) {
                 controller.shutdown();
                 System.exit(-3);
             }
 
+            // 添加JVM钩子
             Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {

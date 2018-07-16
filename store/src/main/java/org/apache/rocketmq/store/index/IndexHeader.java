@@ -21,20 +21,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class IndexHeader {
+    // Index Header 结构大小
     public static final int INDEX_HEADER_SIZE = 40;
+    // 方便定位各时间戳、偏移量在ByteBuffer中的起始位置
     private static int beginTimestampIndex = 0;
     private static int endTimestampIndex = 8;
     private static int beginPhyoffsetIndex = 16;
     private static int endPhyoffsetIndex = 24;
     private static int hashSlotcountIndex = 32;
     private static int indexCountIndex = 36;
-    private final ByteBuffer byteBuffer;
-    private AtomicLong beginTimestamp = new AtomicLong(0);
-    private AtomicLong endTimestamp = new AtomicLong(0);
-    private AtomicLong beginPhyOffset = new AtomicLong(0);
-    private AtomicLong endPhyOffset = new AtomicLong(0);
-    private AtomicInteger hashSlotCount = new AtomicInteger(0);
 
+    private final ByteBuffer byteBuffer;
+    // 第一个索引消息落在Broker的时间戳
+    private AtomicLong beginTimestamp = new AtomicLong(0);
+    // 最后一个索引消息落在Broker的时间戳
+    private AtomicLong endTimestamp = new AtomicLong(0);
+    // 第一个索引消息在CommitLog的偏移量
+    private AtomicLong beginPhyOffset = new AtomicLong(0);
+    // 最后一个索引消息在CommitLog的偏移量
+    private AtomicLong endPhyOffset = new AtomicLong(0);
+    // 构建索引占用的槽位数
+    private AtomicInteger hashSlotCount = new AtomicInteger(0);
+    // 索引个数
     private AtomicInteger indexCount = new AtomicInteger(1);
 
     public IndexHeader(final ByteBuffer byteBuffer) {

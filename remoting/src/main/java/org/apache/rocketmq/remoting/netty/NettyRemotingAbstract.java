@@ -176,7 +176,7 @@ public abstract class NettyRemotingAbstract {
                         if (rpcHook != null) {
                             rpcHook.doBeforeRequest(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), cmd);
                         }
-                        //调用选择的processor的方法：processRequest(ctx, cmd)
+                        // 调用选择的processor的方法：processRequest(ctx, cmd)
                         final RemotingCommand response = pair.getObject1().processRequest(ctx, cmd);
                         if (rpcHook != null) {
                             rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), cmd, response);
@@ -460,7 +460,7 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
-    //请求有三种:同步请求、异步请求、单向请求
+    /* 单向请求[可做事务]*/
     public void invokeOnewayImpl(final Channel channel, final RemotingCommand request, final long timeoutMillis)
         throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
         request.markOnewayRPC();

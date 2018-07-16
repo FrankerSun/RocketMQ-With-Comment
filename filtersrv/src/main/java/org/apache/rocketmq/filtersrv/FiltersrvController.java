@@ -64,6 +64,7 @@ public class FiltersrvController {
 
     public boolean initialize() {
 
+        // 打印所有的配置项
         MixAll.printObjectProperties(log, this.filtersrvConfig);
 
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig);
@@ -72,8 +73,10 @@ public class FiltersrvController {
             Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(),
                 new ThreadFactoryImpl("RemotingExecutorThread_"));
 
+        // 注册请求处理器
         this.registerProcessor();
 
+        // 心跳：注册过滤器到Broker
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

@@ -76,6 +76,10 @@ import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.slf4j.Logger;
 
+
+/**
+ * Push本质也为拉取模式,
+ */
 public class DefaultMQPushConsumerImpl implements MQConsumerInner {
     /**
      * Delay some time when exception occur
@@ -580,6 +584,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 this.pullAPIWrapper = new PullAPIWrapper(
                     mQClientFactory,
                     this.defaultMQPushConsumer.getConsumerGroup(), isUnitMode());
+                //可在应用上通过DefaultMQPullConsumerImpl.registerFilterMessageHook(FilterMessageHook hook)方法注册
                 this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);
 
                 // 存储消费情况，集群模式使用远端存储RemoteBrokerOffsetStore
@@ -615,7 +620,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 // 启动消费服务
                 this.consumeMessageService.start();
 
-                // 注册到Broker
+                // 注册消费者到Broker  -- consumerTable
                 boolean registerOK = mQClientFactory.registerConsumer(this.defaultMQPushConsumer.getConsumerGroup(), this);
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;

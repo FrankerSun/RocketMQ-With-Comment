@@ -52,6 +52,7 @@ public class TransactionMQProducer extends DefaultMQProducer {
     @Override
     public TransactionSendResult sendMessageInTransaction(final Message msg,
         final LocalTransactionExecuter tranExecuter, final Object arg) throws MQClientException {
+        // 必须有 消息回查
         if (null == this.transactionCheckListener) {
             throw new MQClientException("localTransactionBranchCheckListener is null", null);
         }

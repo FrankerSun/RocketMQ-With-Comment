@@ -43,6 +43,7 @@ public class NamesrvStartup {
     public static CommandLine commandLine = null;
 
     public static void main(String[] args) {
+        System.setProperty("user.home", "E:\\rocketmq");
         main0(args);
     }
 

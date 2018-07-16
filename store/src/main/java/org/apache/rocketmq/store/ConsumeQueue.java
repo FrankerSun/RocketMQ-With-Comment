@@ -320,6 +320,7 @@ public class ConsumeQueue {
         return lastOffset;
     }
 
+    /* */
     public boolean flush(final int flushLeastPages) {
         boolean result = this.mappedFileQueue.flush(flushLeastPages);
         if (isExtReadEnable()) {
@@ -375,7 +376,7 @@ public class ConsumeQueue {
         return this.minLogicOffset / CQ_STORE_UNIT_SIZE;
     }
 
-    /*  将消息位置信息到MappedFile[可写情况下最多重试30次]*/
+    /*  添加消息位置信息到MappedFile[可写情况下最多重试30次]*/
     public void putMessagePositionInfoWrapper(DispatchRequest request) {
         final int maxRetries = 30;
         boolean canWrite = this.defaultMessageStore.getRunningFlags().isCQWriteable();

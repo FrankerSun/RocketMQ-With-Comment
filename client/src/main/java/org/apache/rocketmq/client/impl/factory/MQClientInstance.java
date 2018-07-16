@@ -180,6 +180,7 @@ public class MQClientInstance {
             MQVersion.getVersionDesc(MQVersion.CURRENT_VERSION), RemotingCommand.getSerializeTypeConfigInThisServer());
     }
 
+    /* */
     public static TopicPublishInfo topicRouteData2TopicPublishInfo(final String topic, final TopicRouteData route) {
         TopicPublishInfo info = new TopicPublishInfo();
         info.setTopicRouteData(route);
@@ -387,9 +388,7 @@ public class MQClientInstance {
         }
     }
 
-    /**
-     * 移除离线broker
-     */
+    /* 移除离线broker*/
     private void cleanOfflineBroker() {
         try {
             if (this.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
@@ -472,6 +471,7 @@ public class MQClientInstance {
         }
     }
 
+    /* 发送心跳包到所有的broker*/
     public void sendHeartbeatToAllBrokerWithLock() {
         if (this.lockHeartbeat.tryLock()) {
             try {
@@ -615,6 +615,7 @@ public class MQClientInstance {
         try {
             if (this.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                 try {
+                    // 从nameServer获取topicRouteData
                     TopicRouteData topicRouteData;
                     if (isDefault && defaultMQProducer != null) {
                         topicRouteData = this.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(defaultMQProducer.getCreateTopicKey(),
@@ -1025,6 +1026,7 @@ public class MQClientInstance {
         return null;
     }
 
+    /* 获取broker地址[publish]*/
     public String findBrokerAddressInPublish(final String brokerName) {
         HashMap<Long/* brokerId */, String/* address */> map = this.brokerAddrTable.get(brokerName);
         if (map != null && !map.isEmpty()) {
@@ -1034,6 +1036,7 @@ public class MQClientInstance {
         return null;
     }
 
+    /* 获取broker地址[subscribe]*/
     public FindBrokerResult findBrokerAddressInSubscribe(
         final String brokerName,
         final long brokerId,

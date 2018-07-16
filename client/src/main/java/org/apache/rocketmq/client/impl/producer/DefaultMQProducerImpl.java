@@ -468,6 +468,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         // 发送消息
                         sendResult = this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout);
                         endTimestamp = System.currentTimeMillis();
+                        // 更新延迟容错时间
                         this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
                         switch (communicationMode) {
                             case ASYNC:
@@ -972,6 +973,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true");
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_PRODUCER_GROUP, this.defaultMQProducer.getProducerGroup());
         try {
+            // 发送半消息--暂不能投递的消息(发送方已经将消息成功发送到了 MQ 服务端，但是服务端未收到生产者对该消息的二次确认
+            // 此时该消息被标记成“暂不能投递”状态)
             sendResult = this.send(msg);
         } catch (Exception e) {
             throw new MQClientException("send message Exception", e);
@@ -985,6 +988,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     if (sendResult.getTransactionId() != null) {
                         msg.putUserProperty("__transactionId__", sendResult.getTransactionId());
                     }
+                    // 调用本地事务--实现LocalTransactionExecuter接口的类
                     localTransactionState = tranExecuter.executeLocalTransactionBranch(msg, arg);
                     if (null == localTransactionState) {
                         localTransactionState = LocalTransactionState.UNKNOW;
@@ -1011,6 +1015,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
 
         try {
+            // 结束事务：提交或回滚
             this.endTransaction(sendResult, localTransactionState, localException);
         } catch (Exception e) {
             log.warn("local transaction execute " + localTransactionState + ", but end broker transaction failed", e);
@@ -1045,6 +1050,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             id = MessageDecoder.decodeMessageId(sendResult.getMsgId());
         }
         String transactionId = sendResult.getTransactionId();
+        //查找broker地址
         final String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(sendResult.getMessageQueue().getBrokerName());
         EndTransactionRequestHeader requestHeader = new EndTransactionRequestHeader();
         requestHeader.setTransactionId(transactionId);
@@ -1067,6 +1073,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         requestHeader.setTranStateTableOffset(sendResult.getQueueOffset());
         requestHeader.setMsgId(sendResult.getMsgId());
         String remark = localException != null ? ("executeLocalTransactionBranch exception: " + localException.toString()) : null;
+        // 调用
         this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, requestHeader, remark,
             this.defaultMQProducer.getSendMsgTimeout());
     }

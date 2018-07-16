@@ -220,6 +220,7 @@ public class BrokerController {
             }
         }
 
+        // 加载messageStore
         result = result && this.messageStore.load();
 
         if (result) {
@@ -266,7 +267,7 @@ public class BrokerController {
             this.consumerManageExecutor =
                 Executors.newFixedThreadPool(this.brokerConfig.getConsumerManageThreadPoolNums(), new ThreadFactoryImpl(
                     "ConsumerManageThread_"));
-
+            // 注册各种处理器
             this.registerProcessor();
 
             final long initialDelay = UtilAll.computNextMorningTimeMillis() - System.currentTimeMillis();
@@ -393,9 +394,8 @@ public class BrokerController {
     }
 
     public void registerProcessor() {
-        /**
-         * SendMessageProcessor
-         */
+
+        // SendMessageProcessor
         SendMessageProcessor sendProcessor = new SendMessageProcessor(this);
         sendProcessor.registerSendMessageHook(sendMessageHookList);
         sendProcessor.registerConsumeMessageHook(consumeMessageHookList);
@@ -408,15 +408,12 @@ public class BrokerController {
         this.fastRemotingServer.registerProcessor(RequestCode.SEND_MESSAGE_V2, sendProcessor, this.sendMessageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.SEND_BATCH_MESSAGE, sendProcessor, this.sendMessageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.CONSUMER_SEND_MSG_BACK, sendProcessor, this.sendMessageExecutor);
-        /**
-         * PullMessageProcessor
-         */
+
+        // PullMessageProcessor
         this.remotingServer.registerProcessor(RequestCode.PULL_MESSAGE, this.pullMessageProcessor, this.pullMessageExecutor);
         this.pullMessageProcessor.registerConsumeMessageHook(consumeMessageHookList);
 
-        /**
-         * QueryMessageProcessor
-         */
+        // QueryMessageProcessor
         NettyRequestProcessor queryProcessor = new QueryMessageProcessor(this);
         this.remotingServer.registerProcessor(RequestCode.QUERY_MESSAGE, queryProcessor, this.queryMessageExecutor);
         this.remotingServer.registerProcessor(RequestCode.VIEW_MESSAGE_BY_ID, queryProcessor, this.queryMessageExecutor);
@@ -424,9 +421,7 @@ public class BrokerController {
         this.fastRemotingServer.registerProcessor(RequestCode.QUERY_MESSAGE, queryProcessor, this.queryMessageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.VIEW_MESSAGE_BY_ID, queryProcessor, this.queryMessageExecutor);
 
-        /**
-         * ClientManageProcessor
-         */
+        // ClientManageProcessor
         ClientManageProcessor clientProcessor = new ClientManageProcessor(this);
         this.remotingServer.registerProcessor(RequestCode.HEART_BEAT, clientProcessor, this.clientManageExecutor);
         this.remotingServer.registerProcessor(RequestCode.UNREGISTER_CLIENT, clientProcessor, this.clientManageExecutor);
@@ -436,9 +431,7 @@ public class BrokerController {
         this.fastRemotingServer.registerProcessor(RequestCode.UNREGISTER_CLIENT, clientProcessor, this.clientManageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.CHECK_CLIENT_CONFIG, clientProcessor, this.clientManageExecutor);
 
-        /**
-         * ConsumerManageProcessor
-         */
+        // ConsumerManageProcessor
         ConsumerManageProcessor consumerManageProcessor = new ConsumerManageProcessor(this);
         this.remotingServer.registerProcessor(RequestCode.GET_CONSUMER_LIST_BY_GROUP, consumerManageProcessor, this.consumerManageExecutor);
         this.remotingServer.registerProcessor(RequestCode.UPDATE_CONSUMER_OFFSET, consumerManageProcessor, this.consumerManageExecutor);
@@ -448,15 +441,11 @@ public class BrokerController {
         this.fastRemotingServer.registerProcessor(RequestCode.UPDATE_CONSUMER_OFFSET, consumerManageProcessor, this.consumerManageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.QUERY_CONSUMER_OFFSET, consumerManageProcessor, this.consumerManageExecutor);
 
-        /**
-         * EndTransactionProcessor
-         */
+        // EndTransactionProcessor
         this.remotingServer.registerProcessor(RequestCode.END_TRANSACTION, new EndTransactionProcessor(this), this.sendMessageExecutor);
         this.fastRemotingServer.registerProcessor(RequestCode.END_TRANSACTION, new EndTransactionProcessor(this), this.sendMessageExecutor);
 
-        /**
-         * Default
-         */
+        // Default
         AdminBrokerProcessor adminProcessor = new AdminBrokerProcessor(this);
         this.remotingServer.registerDefaultProcessor(adminProcessor, this.adminBrokerExecutor);
         this.fastRemotingServer.registerDefaultProcessor(adminProcessor, this.adminBrokerExecutor);

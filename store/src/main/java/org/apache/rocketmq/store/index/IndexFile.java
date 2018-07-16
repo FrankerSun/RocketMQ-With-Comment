@@ -27,16 +27,20 @@ import org.apache.rocketmq.store.MappedFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/* 索引文件抽象*/
 public class IndexFile {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    // 哈希槽 todo fs
     private static int hashSlotSize = 4;
     private static int indexSize = 20;
     private static int invalidIndex = 0;
     private final int hashSlotNum;
     private final int indexNum;
+    // index文件  文件大小为 40 + 5,000,000 * 4 + ((5,000,000 * 4) * 20) = 420,000,040 (字节)
     private final MappedFile mappedFile;
     private final FileChannel fileChannel;
     private final MappedByteBuffer mappedByteBuffer;
+    // Index Header
     private final IndexHeader indexHeader;
 
     public IndexFile(final String fileName, final int hashSlotNum, final int indexNum,
@@ -71,6 +75,7 @@ public class IndexFile {
         this.indexHeader.load();
     }
 
+    /* indexFile 刷盘*/
     public void flush() {
         long beginTime = System.currentTimeMillis();
         if (this.mappedFile.hold()) {
@@ -89,6 +94,7 @@ public class IndexFile {
         return this.mappedFile.destroy(intervalForcibly);
     }
 
+    /* 写入索引消息到index文件*/
     public boolean putKey(final String key, final long phyOffset, final long storeTimestamp) {
         if (this.indexHeader.getIndexCount() < this.indexNum) {
             int keyHash = indexKeyHashMethod(key);

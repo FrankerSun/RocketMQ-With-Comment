@@ -112,27 +112,30 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
             }
         }
 
+        // 根据偏移量查找消息
         final MessageExt msgExt = this.brokerController.getMessageStore().lookMessageByOffset(requestHeader.getCommitLogOffset());
         if (msgExt != null) {
+            // 查询生产组并进行校验
             final String pgroupRead = msgExt.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP);
             if (!pgroupRead.equals(requestHeader.getProducerGroup())) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
                 response.setRemark("the producer group wrong");
                 return response;
             }
-
+            // 校验同一队列
             if (msgExt.getQueueOffset() != requestHeader.getTranStateTableOffset()) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
                 response.setRemark("the transaction state table offset wrong");
                 return response;
             }
-
+            // 校验CommitLog偏移量
             if (msgExt.getCommitLogOffset() != requestHeader.getCommitLogOffset()) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
                 response.setRemark("the commit log offset wrong");
                 return response;
             }
 
+            // 事务消息转换
             MessageExtBrokerInner msgInner = this.endMessageTransaction(msgExt);
             msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), requestHeader.getCommitOrRollback()));
 
@@ -144,6 +147,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
             }
 
             final MessageStore messageStore = this.brokerController.getMessageStore();
+            // 存储 @see [###1 事务提交或回滚提交]
             final PutMessageResult putMessageResult = messageStore.putMessage(msgInner);
             if (putMessageResult != null) {
                 switch (putMessageResult.getPutMessageStatus()) {
@@ -202,6 +206,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /* 事务消息转换*/
     private MessageExtBrokerInner endMessageTransaction(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         msgInner.setBody(msgExt.getBody());
