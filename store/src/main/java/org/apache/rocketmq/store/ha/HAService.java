@@ -40,6 +40,7 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/* */
 public class HAService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -47,6 +48,7 @@ public class HAService {
 
     private final List<HAConnection> connectionList = new LinkedList<>();
 
+    // 默认使用10912作为HA端口
     private final AcceptSocketService acceptSocketService;
 
     private final DefaultMessageStore defaultMessageStore;
@@ -54,8 +56,10 @@ public class HAService {
     private final WaitNotifyObject waitNotifyObject = new WaitNotifyObject();
     private final AtomicLong push2SlaveMaxOffset = new AtomicLong(0);
 
+    // 用于同步双写
     private final GroupTransferService groupTransferService;
 
+    //
     private final HAClient haClient;
 
     public HAService(final DefaultMessageStore defaultMessageStore) throws IOException {
@@ -105,6 +109,7 @@ public class HAService {
     // this.groupTransferService.notifyTransferSome();
     // }
 
+    /* master/slave HA启动流程 */
     public void start() throws Exception {
         this.acceptSocketService.beginAccept();
         this.acceptSocketService.start();
@@ -153,9 +158,7 @@ public class HAService {
         return push2SlaveMaxOffset;
     }
 
-    /**
-     * Listens to slave connections to create {@link HAConnection}.
-     */
+    /* 监听slave的连接[创建HAConnection处理数据同步] */
     class AcceptSocketService extends ServiceThread {
         private final SocketAddress socketAddressListen;
         private ServerSocketChannel serverSocketChannel;
@@ -215,6 +218,7 @@ public class HAService {
                                         + sc.socket().getRemoteSocketAddress());
 
                                     try {
+                                        // 负责主从数据同步逻辑
                                         HAConnection conn = new HAConnection(HAService.this, sc);
                                         conn.start();
                                         HAService.this.addConnection(conn);
@@ -323,8 +327,10 @@ public class HAService {
         }
     }
 
+    /* 负责同步消息*/
     class HAClient extends ServiceThread {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
+        //
         private final AtomicReference<String> masterAddress = new AtomicReference<>();
         private final ByteBuffer reportOffset = ByteBuffer.allocate(8);
         private SocketChannel socketChannel;
@@ -348,6 +354,9 @@ public class HAService {
             }
         }
 
+        /**
+         * 判断是否需要上报offset[间隔5秒]
+         */
         private boolean isTimeToReportOffset() {
             long interval =
                 HAService.this.defaultMessageStore.getSystemClock().now() - this.lastWriteTimestamp;
@@ -400,6 +409,9 @@ public class HAService {
             this.byteBufferBackup = tmp;
         }
 
+        /**
+         * 处理数据
+         */
         private boolean processReadEvent() {
             int readSizeZeroTimes = 0;
             while (this.byteBufferRead.hasRemaining()) {
@@ -408,6 +420,7 @@ public class HAService {
                     if (readSize > 0) {
                         lastWriteTimestamp = HAService.this.defaultMessageStore.getSystemClock().now();
                         readSizeZeroTimes = 0;
+                        // 处理逻辑
                         boolean result = this.dispatchReadRequest();
                         if (!result) {
                             log.error("HAClient, dispatchReadRequest error");
@@ -493,8 +506,12 @@ public class HAService {
             return result;
         }
 
+        /**
+         * 如果为slave，则连接master，生成socketChannel
+         */
         private boolean connectMaster() throws ClosedChannelException {
             if (null == socketChannel) {
+                // BrokerController.initialize时针对slave设置master地址：masterAddress
                 String addr = this.masterAddress.get();
                 if (addr != null) {
 
@@ -548,8 +565,9 @@ public class HAService {
 
             while (!this.isStopped()) {
                 try {
+                    // 判断是否为master
                     if (this.connectMaster()) {
-
+                        // 是否需要上报offset[间隔5秒]
                         if (this.isTimeToReportOffset()) {
                             boolean result = this.reportSlaveMaxOffset(this.currentReportedOffset);
                             if (!result) {
@@ -558,16 +576,18 @@ public class HAService {
                         }
 
                         this.selector.select(1000);
-
+                        // 处理数据
                         boolean ok = this.processReadEvent();
                         if (!ok) {
                             this.closeMaster();
                         }
 
+                        // 上报最大offset[如果currentPhyOffset > lastReportedOffset则上报]
                         if (!reportSlaveMaxOffsetPlus()) {
                             continue;
                         }
 
+                        // 心跳
                         long interval =
                             HAService.this.getDefaultMessageStore().getSystemClock().now()
                                 - this.lastWriteTimestamp;
