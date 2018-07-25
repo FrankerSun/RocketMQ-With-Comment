@@ -29,18 +29,23 @@ public class FiltersrvConfig {
     private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY,
         System.getenv(MixAll.NAMESRV_ADDR_ENV));
 
+    // broker地址--一个filterSrv连接一个broker
     private String connectWhichBroker = "127.0.0.1:10911";
+    // FilterServer IP
     private String filterServerIP = RemotingUtil.getLocalAddress();
-
+    // 消息超过该只则进行压缩
     private int compressMsgBodyOverHowmuch = 1024 * 8;
+    // 压缩级别
     private int zipCompressLevel = 5;
-
+    // 是否允许客户端上传Java类
     private boolean clientUploadFilterClassEnable = true;
-
+    // 过滤类仓库地址
     private String filterClassRepertoryUrl = "http://fsrep.tbsite.net/filterclass";
-
+    // 异步信号量
     private int fsServerAsyncSemaphoreValue = 2048;
+    // 异步回调线程池线程数量
     private int fsServerCallbackExecutorThreads = 64;
+    // 工作线程数
     private int fsServerWorkerThreads = 64;
 
     public String getRocketmqHome() {

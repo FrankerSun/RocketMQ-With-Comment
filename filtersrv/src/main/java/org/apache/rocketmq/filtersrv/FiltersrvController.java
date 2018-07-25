@@ -35,6 +35,9 @@ import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *
+ */
 public class FiltersrvController {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.FILTERSRV_LOGGER_NAME);
 
@@ -101,11 +104,14 @@ public class FiltersrvController {
             .registerDefaultProcessor(new DefaultRequestProcessor(this), this.remotingExecutor);
     }
 
+    /** 注册fs到broker*/
     public void registerFilterServerToBroker() {
         try {
+            // 注册
             RegisterFilterServerResponseHeader responseHeader =
                 this.filterServerOuterAPI.registerFilterServerToBroker(
                     this.filtersrvConfig.getConnectWhichBroker(), this.localAddr());
+            //
             this.defaultMQPullConsumer.getDefaultMQPullConsumerImpl().getPullAPIWrapper()
                 .setDefaultBrokerId(responseHeader.getBrokerId());
 
