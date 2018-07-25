@@ -24,6 +24,9 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+/**
+ * 对cli的封装，主要用于解析、构建command
+ */
 public class ServerUtil {
 
     public static Options buildCommandlineOptions(final Options options) {
@@ -40,6 +43,7 @@ public class ServerUtil {
         return options;
     }
 
+    /** 转换参数到command*/
     public static CommandLine parseCmdLine(final String appName, String[] args, Options options,
         CommandLineParser parser) {
         HelpFormatter hf = new HelpFormatter();
@@ -64,6 +68,7 @@ public class ServerUtil {
         hf.printHelp(appName, options, true);
     }
 
+    /** 将命令option转为properties*/
     public static Properties commandLine2Properties(final CommandLine commandLine) {
         Properties properties = new Properties();
         Option[] opts = commandLine.getOptions();
