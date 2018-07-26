@@ -43,6 +43,10 @@ import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * ToolProvider+JavaCompiler
+ * URLClassLoader
+ */
 public class DynaCode {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.FILTERSRV_LOGGER_NAME);
 
@@ -87,6 +91,8 @@ public class DynaCode {
     }
 
     public DynaCode(List<String> codeStrs) {
+        // Thread.currentThread().getContextClassLoader()
+        //      -->  https://www.javaworld.com/article/2077344/core-java/find-a-way-out-of-the-classloader-maze.html
         this(Thread.currentThread().getContextClassLoader(), codeStrs);
     }
 
@@ -114,6 +120,7 @@ public class DynaCode {
         return buf.toString();
     }
 
+    /** 编译并加载Class*/
     public static Class<?> compileAndLoadClass(final String className, final String javaSource)
         throws Exception {
         String classSimpleName = FilterAPI.simpleClassName(className);
@@ -189,7 +196,9 @@ public class DynaCode {
 
     public void compileAndLoadClass() throws Exception {
         String[] sourceFiles = this.uploadSrcFile();
+        // 编译
         this.compile(sourceFiles);
+        // 加载
         this.loadClass(this.loadClass.keySet());
     }
 
@@ -255,8 +264,10 @@ public class DynaCode {
     }
 
     private void compile(String[] srcFiles) throws Exception {
+        // 构造javac编译环境
         String args[] = this.buildCompileJavacArgs(srcFiles);
         ByteArrayOutputStream err = new ByteArrayOutputStream();
+        // 获取Java编译器
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new NullPointerException(
@@ -270,6 +281,7 @@ public class DynaCode {
 
     private void loadClass(Set<String> classFullNames) throws ClassNotFoundException, MalformedURLException {
         synchronized (loadClass) {
+            // 类加载器  动态加载
             ClassLoader classLoader =
                 new URLClassLoader(new URL[] {new File(outPutClassPath).toURI().toURL()},
                     parentClassLoader);
