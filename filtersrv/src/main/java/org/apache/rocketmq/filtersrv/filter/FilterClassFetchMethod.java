@@ -18,5 +18,7 @@
 package org.apache.rocketmq.filtersrv.filter;
 
 public interface FilterClassFetchMethod {
+
+    /** 从远程获取class文件字符数据*/
     public String fetch(final String topic, final String consumerGroup, final String className);
 }

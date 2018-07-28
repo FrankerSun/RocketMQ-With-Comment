@@ -38,6 +38,9 @@ import org.apache.rocketmq.srvutil.ShutdownHookThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *
+ */
 public class FiltersrvStartup {
     public static Logger log;
 
@@ -48,6 +51,7 @@ public class FiltersrvStartup {
     public static FiltersrvController start(FiltersrvController controller) {
 
         try {
+            // [important]
             controller.start();
         } catch (Exception e) {
             e.printStackTrace();

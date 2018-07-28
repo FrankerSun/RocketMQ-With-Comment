@@ -48,8 +48,7 @@ public class FilterClassManager {
     public FilterClassManager(FiltersrvController filtersrvController) {
         this.filtersrvController = filtersrvController;
         this.filterClassFetchMethod =
-            new HttpFilterClassFetchMethod(this.filtersrvController.getFiltersrvConfig()
-                .getFilterClassRepertoryUrl());
+            new HttpFilterClassFetchMethod(this.filtersrvController.getFiltersrvConfig().getFilterClassRepertoryUrl());
     }
 
     private static String buildKey(final String consumerGroup, final String topic) {
@@ -57,6 +56,7 @@ public class FilterClassManager {
     }
 
     public void start() {
+        // 如果不允许客户端上传filter代码，则每隔1分钟定时从远程服务器获取
         if (!this.filtersrvController.getFiltersrvConfig().isClientUploadFilterClassEnable()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
@@ -75,6 +75,7 @@ public class FilterClassManager {
                 Entry<String, FilterClassInfo> next = it.next();
                 FilterClassInfo filterClassInfo = next.getValue();
                 String[] topicAndGroup = next.getKey().split("@");
+                // Http请求获取制定filter文件
                 String responseStr =
                     this.filterClassFetchMethod.fetch(topicAndGroup[0], topicAndGroup[1],
                         filterClassInfo.getClassName());
@@ -101,6 +102,7 @@ public class FilterClassManager {
         this.scheduledExecutorService.shutdown();
     }
 
+    /**[important] 注册filter类*/
     public boolean registerFilterClass(final String consumerGroup, final String topic,
         final String className, final int classCRC, final byte[] filterSourceBinary) {
         final String key = buildKey(consumerGroup, topic);
@@ -110,6 +112,7 @@ public class FilterClassManager {
         if (null == filterClassInfoPrev) {
             registerNew = true;
         } else {
+            // 如果允许客户端上传Filter类，则需再判断CRC
             if (this.filtersrvController.getFiltersrvConfig().isClientUploadFilterClassEnable()) {
                 if (filterClassInfoPrev.getClassCRC() != classCRC && classCRC != 0) {
                     registerNew = true;
@@ -125,7 +128,7 @@ public class FilterClassManager {
                 }
 
                 try {
-
+                    // 创建FilterClassInfo，并放入filterClassTable
                     FilterClassInfo filterClassInfoNew = new FilterClassInfo();
                     filterClassInfoNew.setClassName(className);
                     filterClassInfoNew.setClassCRC(0);

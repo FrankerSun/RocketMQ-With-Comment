@@ -39,7 +39,7 @@ public class FiltersrvConfig {
     private int zipCompressLevel = 5;
     // 是否允许客户端上传Java类
     private boolean clientUploadFilterClassEnable = true;
-    // 过滤类仓库地址
+    // filter类文件仓库地址
     private String filterClassRepertoryUrl = "http://fsrep.tbsite.net/filterclass";
     // 异步信号量
     private int fsServerAsyncSemaphoreValue = 2048;

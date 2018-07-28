@@ -50,6 +50,7 @@ import org.apache.rocketmq.store.CommitLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** 添加拦截器后处理消费者请求*/
 public class DefaultRequestProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.FILTERSRV_LOGGER_NAME);
 
@@ -109,6 +110,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 处理消费者消费请求*/
     private RemotingCommand pullMessageForward(final ChannelHandlerContext ctx,
         final RemotingCommand request) throws Exception {
         final RemotingCommand response = RemotingCommand.createResponseCommand(PullMessageResponseHeader.class);

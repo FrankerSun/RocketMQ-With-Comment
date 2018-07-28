@@ -31,8 +31,8 @@ public class HttpFilterClassFetchMethod implements FilterClassFetchMethod {
         this.url = url;
     }
 
-    @Override
-    public String fetch(String topic, String consumerGroup, String className) {
+    /** 从远程获取class文件字符数据*/
+    @Override public String fetch(String topic, String consumerGroup, String className) {
         String thisUrl = String.format("%s/%s.java", this.url, className);
 
         try {

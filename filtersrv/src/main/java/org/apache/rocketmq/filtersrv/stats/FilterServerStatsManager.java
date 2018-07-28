@@ -25,6 +25,7 @@ import org.apache.rocketmq.common.stats.StatsItemSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** todo 借助StatsItemSet.construct.init*/
 public class FilterServerStatsManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.FILTERSRV_LOGGER_NAME);
     private final ScheduledExecutorService scheduledExecutorService = Executors
