@@ -92,45 +92,72 @@ public class BrokerController {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final Logger LOG_PROTECTION = LoggerFactory.getLogger(LoggerName.PROTECTION_LOGGER_NAME);
     private static final Logger LOG_WATER_MARK = LoggerFactory.getLogger(LoggerName.WATER_MARK_LOGGER_NAME);
+    // broker配置
     private final BrokerConfig brokerConfig;
+    // netty服务端配置
     private final NettyServerConfig nettyServerConfig;
+    // netty客户端配置
     private final NettyClientConfig nettyClientConfig;
+    // messageStore配置
     private final MessageStoreConfig messageStoreConfig;
+    // 消费偏移量Manager
     private final ConsumerOffsetManager consumerOffsetManager;
+    // 消费者Manager
     private final ConsumerManager consumerManager;
+    // 消费者过滤器Manager
     private final ConsumerFilterManager consumerFilterManager;
+    // 生产者Manager
     private final ProducerManager producerManager;
+    // 客户端心跳
     private final ClientHousekeepingService clientHousekeepingService;
     private final PullMessageProcessor pullMessageProcessor;
     private final PullRequestHoldService pullRequestHoldService;
     private final MessageArrivingListener messageArrivingListener;
+    // Broker与Client交互
     private final Broker2Client broker2Client;
+    // 订阅组Manager
     private final SubscriptionGroupManager subscriptionGroupManager;
+    // 消息者变更监听器
     private final ConsumerIdsChangeListener consumerIdsChangeListener;
+    // 负载均衡锁Manager
     private final RebalanceLockManager rebalanceLockManager = new RebalanceLockManager();
+    // Broker向外交互
     private final BrokerOuterAPI brokerOuterAPI;
+    // 定时任务
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
         "BrokerControllerScheduledThread"));
+    // Slave同步
     private final SlaveSynchronize slaveSynchronize;
+    // 各种线程池队列
     private final BlockingQueue<Runnable> sendThreadPoolQueue;
     private final BlockingQueue<Runnable> pullThreadPoolQueue;
     private final BlockingQueue<Runnable> queryThreadPoolQueue;
     private final BlockingQueue<Runnable> clientManagerThreadPoolQueue;
     private final BlockingQueue<Runnable> consumerManagerThreadPoolQueue;
+    // 过滤器服务Manager
     private final FilterServerManager filterServerManager;
     private final BrokerStatsManager brokerStatsManager;
     private final List<SendMessageHook> sendMessageHookList = new ArrayList<SendMessageHook>();
     private final List<ConsumeMessageHook> consumeMessageHookList = new ArrayList<ConsumeMessageHook>();
+    // 存储
     private MessageStore messageStore;
+    // 远程服务
     private RemotingServer remotingServer;
     private RemotingServer fastRemotingServer;
+    // Topic配置
     private TopicConfigManager topicConfigManager;
+    // 发送消息线程池
     private ExecutorService sendMessageExecutor;
+    // 拉取消息线程池
     private ExecutorService pullMessageExecutor;
+    // 查询消息线程池
     private ExecutorService queryMessageExecutor;
+    //
     private ExecutorService adminBrokerExecutor;
+    //
     private ExecutorService clientManageExecutor;
     private ExecutorService consumerManageExecutor;
+    // 是否需要定期更新HAMaster地址
     private boolean updateMasterHAServerAddrPeriodically = false;
     private BrokerStats brokerStats;
     private InetSocketAddress storeHost;
