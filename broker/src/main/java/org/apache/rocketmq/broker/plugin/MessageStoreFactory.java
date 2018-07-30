@@ -21,15 +21,20 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import org.apache.rocketmq.store.MessageStore;
 
+/**
+ * 工厂设计模式：构建messageStore
+ */
 public final class MessageStoreFactory {
     public final static MessageStore build(MessageStorePluginContext context, MessageStore messageStore)
         throws IOException {
+        // 如果配置plugin项，则对messageStore安装相关插件
         String plugin = context.getBrokerConfig().getMessageStorePlugIn();
         if (plugin != null && plugin.trim().length() != 0) {
             String[] pluginClasses = plugin.split(",");
             for (int i = pluginClasses.length - 1; i >= 0; --i) {
                 String pluginClass = pluginClasses[i];
                 try {
+                    // 标准使用反射生成对象实例
                     @SuppressWarnings("unchecked")
                     Class<AbstractPluginMessageStore> clazz = (Class<AbstractPluginMessageStore>) Class.forName(pluginClass);
                     Constructor<AbstractPluginMessageStore> construct = clazz.getConstructor(MessageStorePluginContext.class, MessageStore.class);
