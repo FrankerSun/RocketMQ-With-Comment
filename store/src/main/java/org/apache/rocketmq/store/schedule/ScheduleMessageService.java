@@ -43,6 +43,9 @@ import org.apache.rocketmq.store.config.StorePathConfigHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 延迟消费服务
+ */
 public class ScheduleMessageService extends ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -202,8 +205,11 @@ public class ScheduleMessageService extends ConfigManager {
         return true;
     }
 
+    /** Timer：实现延迟队列*/
     class DeliverDelayedMessageTimerTask extends TimerTask {
+        // 延迟级别
         private final int delayLevel;
+        // 偏移量
         private final long offset;
 
         public DeliverDelayedMessageTimerTask(int delayLevel, long offset) {
@@ -214,6 +220,7 @@ public class ScheduleMessageService extends ConfigManager {
         @Override
         public void run() {
             try {
+                // 定时执行
                 this.executeOnTimeup();
             } catch (Exception e) {
                 // XXX: warn and notify me
@@ -224,7 +231,8 @@ public class ScheduleMessageService extends ConfigManager {
         }
 
         /**
-         * @return
+         * 改正投放消息的时间
+         * 因为发送级别对应的发送间隔可以调整，如果超过当前间隔，则修正成当前配置，避免后面的消息无法发送。
          */
         private long correctDeliverTimestamp(final long now, final long deliverTimestamp) {
 
@@ -238,7 +246,11 @@ public class ScheduleMessageService extends ConfigManager {
             return result;
         }
 
+        /**
+         * [important] 实现延迟队列
+         */
         public void executeOnTimeup() {
+            // 查找对应的消息队列
             ConsumeQueue cq =
                 ScheduleMessageService.this.defaultMessageStore.findConsumeQueue(SCHEDULE_TOPIC,
                     delayLevel2QueueId(delayLevel));
@@ -280,9 +292,9 @@ public class ScheduleMessageService extends ConfigManager {
                                 MessageExt msgExt =
                                     ScheduleMessageService.this.defaultMessageStore.lookMessageByOffset(
                                         offsetPy, sizePy);
-
                                 if (msgExt != null) {
                                     try {
+                                        // 消息存在 投递消息
                                         MessageExtBrokerInner msgInner = this.messageTimeup(msgExt);
                                         PutMessageResult putMessageResult =
                                             ScheduleMessageService.this.defaultMessageStore
@@ -292,6 +304,7 @@ public class ScheduleMessageService extends ConfigManager {
                                             && putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) {
                                             continue;
                                         } else {
+                                            // 消息投递失败，更新进度，重新设置schedule
                                             // XXX: warn and notify me
                                             log.error(
                                                 "ScheduleMessageService, a message time up, but reput it failed, topic: {} msgId {}",
@@ -306,9 +319,6 @@ public class ScheduleMessageService extends ConfigManager {
                                     } catch (Exception e) {
                                         /*
                                          * XXX: warn and notify me
-
-
-
                                          */
                                         log.error(
                                             "ScheduleMessageService, messageTimeup execute error, drop it. msgExt="
@@ -317,6 +327,7 @@ public class ScheduleMessageService extends ConfigManager {
                                     }
                                 }
                             } else {
+                                // 消息未达到投递时间，生成新的schedule
                                 ScheduleMessageService.this.timer.schedule(
                                     new DeliverDelayedMessageTimerTask(this.delayLevel, nextOffset),
                                     countdown);
@@ -336,7 +347,7 @@ public class ScheduleMessageService extends ConfigManager {
                     }
                 } // end of if (bufferCQ != null)
                 else {
-
+                    // bufferCQ==null：查找不到，转到最小消费进度
                     long cqMinOffset = cq.getMinOffsetInQueue();
                     if (offset < cqMinOffset) {
                         failScheduleOffset = cqMinOffset;

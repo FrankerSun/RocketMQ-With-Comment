@@ -485,6 +485,11 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 根据startIndex查找到相应的索引文件，。
+     * @param startIndex 起始偏移量索引
+     * @return 文件startIndex到readPosition
+     */
     public SelectMappedBufferResult getIndexBuffer(final long startIndex) {
         int mappedFileSize = this.mappedFileSize;
         long offset = startIndex * CQ_STORE_UNIT_SIZE;

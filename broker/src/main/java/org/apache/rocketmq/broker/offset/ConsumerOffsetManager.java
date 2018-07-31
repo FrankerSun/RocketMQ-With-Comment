@@ -37,6 +37,7 @@ public class ConsumerOffsetManager extends ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final String TOPIC_GROUP_SEPARATOR = "@";
 
+    // 存储消费偏移量的容器
     private ConcurrentMap<String/* topic@group */, ConcurrentMap<Integer, Long>> offsetTable =
         new ConcurrentHashMap<String, ConcurrentMap<Integer, Long>>(512);
 
@@ -59,6 +60,7 @@ public class ConsumerOffsetManager extends ConfigManager {
                 String topic = arrays[0];
                 String group = arrays[1];
 
+                //
                 if (null == brokerController.getConsumerManager().findSubscriptionData(group, topic)
                     && this.offsetBehindMuchThanData(topic, next.getValue())) {
                     it.remove();
@@ -82,6 +84,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         return result;
     }
 
+    /** 迭代查找*/
     public Set<String> whichTopicByConsumer(final String group) {
         Set<String> topics = new HashSet<String>();
 
@@ -100,6 +103,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         return topics;
     }
 
+    /** 普通查找*/
     public Set<String> whichGroupByTopic(final String topic) {
         Set<String> groups = new HashSet<String>();
 

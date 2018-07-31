@@ -414,7 +414,10 @@ public class MappedFile extends ReferenceResource {
         return null;
     }
 
-    /* 随机读取mappedByteBuffer*/
+    /**
+     * 获取mappedByteBuffer：整个文件的一部分
+     * pos --> readPosition
+     */
     public SelectMappedBufferResult selectMappedBuffer(int pos) {
         int readPosition = getReadPosition();
         if (pos < readPosition && pos >= 0) {
