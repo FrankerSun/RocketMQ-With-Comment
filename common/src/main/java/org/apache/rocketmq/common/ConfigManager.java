@@ -26,6 +26,9 @@ public abstract class ConfigManager {
 
     public abstract String encode();
 
+    /**
+     * 加载配置文件
+     */
     public boolean load() {
         String fileName = null;
         try {
@@ -45,8 +48,14 @@ public abstract class ConfigManager {
         }
     }
 
+    /**
+     * 获取配置文件路径
+     */
     public abstract String configFilePath();
 
+    /**
+     * 当加载配置文件失败时，加载configFile.bak文件
+     */
     private boolean loadBak() {
         String fileName = null;
         try {
@@ -67,6 +76,9 @@ public abstract class ConfigManager {
 
     public abstract void decode(final String jsonString);
 
+    /**
+     * 将配置写入配置文件，用于持久化
+     */
     public synchronized void persist() {
         String jsonString = this.encode(true);
         if (jsonString != null) {
