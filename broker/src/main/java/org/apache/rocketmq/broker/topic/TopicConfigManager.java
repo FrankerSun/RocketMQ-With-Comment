@@ -42,12 +42,16 @@ import org.slf4j.LoggerFactory;
 
 public class TopicConfigManager extends ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    // 获取锁最大等待时间
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
+    // 重入锁
     private transient final Lock lockTopicConfigTable = new ReentrantLock();
-
+    // 配置表
     private final ConcurrentMap<String, TopicConfig> topicConfigTable =
         new ConcurrentHashMap<String, TopicConfig>(1024);
+    // 当前配置的版本
     private final DataVersion dataVersion = new DataVersion();
+    // todo
     private final Set<String> systemTopicList = new HashSet<String>();
     private transient BrokerController brokerController;
 
@@ -134,6 +138,10 @@ public class TopicConfigManager extends ConfigManager {
         return this.systemTopicList;
     }
 
+    /**
+     * 判断topic是否能发送消息
+     * DEFAULT_TOPIC = "TBW102"不能发送消息
+     */
     public boolean isTopicCanSendMessage(final String topic) {
         return !topic.equals(MixAll.DEFAULT_TOPIC);
     }
@@ -142,6 +150,9 @@ public class TopicConfigManager extends ConfigManager {
         return this.topicConfigTable.get(topic);
     }
 
+    /**
+     * 在发送消息的方法中，创建topic
+     */
     public TopicConfig createTopicInSendMessageMethod(final String topic, final String defaultTopic,
         final String remoteAddress, final int clientDefaultTopicQueueNums, final int topicSysFlag) {
         TopicConfig topicConfig = null;
@@ -150,10 +161,12 @@ public class TopicConfigManager extends ConfigManager {
         try {
             if (this.lockTopicConfigTable.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                 try {
+                    // 若topicConfigTable中有记录直接返回
                     topicConfig = this.topicConfigTable.get(topic);
                     if (topicConfig != null)
                         return topicConfig;
 
+                    // defaultTopicConfi[默认"TBW102"]有记录且有继承权限则创建一个新的配置项
                     TopicConfig defaultTopicConfig = this.topicConfigTable.get(defaultTopic);
                     if (defaultTopicConfig != null) {
                         if (defaultTopic.equals(MixAll.DEFAULT_TOPIC)) {
@@ -216,11 +229,15 @@ public class TopicConfigManager extends ConfigManager {
         return topicConfig;
     }
 
+    /**
+     * 在消费者发送消费失败消息到Broker的方法中，创建topic
+     */
     public TopicConfig createTopicInSendMessageBackMethod(
         final String topic,
         final int clientDefaultTopicQueueNums,
         final int perm,
         final int topicSysFlag) {
+        // 若topicConfigTable中有记录直接返回
         TopicConfig topicConfig = this.topicConfigTable.get(topic);
         if (topicConfig != null)
             return topicConfig;
@@ -234,6 +251,7 @@ public class TopicConfigManager extends ConfigManager {
                     if (topicConfig != null)
                         return topicConfig;
 
+                    // 生成TopicConfig及一系列操作
                     topicConfig = new TopicConfig(topic);
                     topicConfig.setReadQueueNums(clientDefaultTopicQueueNums);
                     topicConfig.setWriteQueueNums(clientDefaultTopicQueueNums);
@@ -253,6 +271,7 @@ public class TopicConfigManager extends ConfigManager {
             log.error("createTopicInSendMessageBackMethod exception", e);
         }
 
+        // 注册到broker
         if (createNew) {
             this.brokerController.registerBrokerAll(false, true);
         }
@@ -303,23 +322,33 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /**
+     *
+     * 更新topic配置
+     */
     public void updateTopicConfig(final TopicConfig topicConfig) {
+        // 更新topicConfigTable
         TopicConfig old = this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
         if (old != null) {
             log.info("update topic config, old:[{}] new:[{}]", old, topicConfig);
         } else {
             log.info("create new topic [{}]", topicConfig);
         }
-
+        // 更新dataVersion
         this.dataVersion.nextVersion();
-
+        // 持久化配置
         this.persist();
     }
 
+    /**
+     * 更新topicConfigTable中topic的有序标识
+     * orderKVTableFromNs中有则为有序，无则为无序
+     */
     public void updateOrderTopicConfig(final KVTable orderKVTableFromNs) {
 
         if (orderKVTableFromNs != null && orderKVTableFromNs.getTable() != null) {
             boolean isChange = false;
+            // 更新topicConfigTable中一些topic为有序的
             Set<String> orderTopics = orderKVTableFromNs.getTable().keySet();
             for (String topic : orderTopics) {
                 TopicConfig topicConfig = this.topicConfigTable.get(topic);
@@ -330,6 +359,7 @@ public class TopicConfigManager extends ConfigManager {
                 }
             }
 
+            // 更新topicConfigTable中一些topic为无序的
             for (Map.Entry<String, TopicConfig> entry : this.topicConfigTable.entrySet()) {
                 String topic = entry.getKey();
                 if (!orderTopics.contains(topic)) {
@@ -349,6 +379,9 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /**
+     * 判断topic是否为有序的
+     */
     public boolean isOrderTopic(final String topic) {
         TopicConfig topicConfig = this.topicConfigTable.get(topic);
         if (topicConfig == null) {
@@ -358,6 +391,9 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /**
+     * 删除topic对应的配置/更新dataVersion并持久化
+     */
     public void deleteTopicConfig(final String topic) {
         TopicConfig old = this.topicConfigTable.remove(topic);
         if (old != null) {

@@ -11,3 +11,5 @@ devenv
 !NOTICE-BIN
 !LICENSE-BIN
 .DS_Store
+.tags
+.tags_sorted_by_file
