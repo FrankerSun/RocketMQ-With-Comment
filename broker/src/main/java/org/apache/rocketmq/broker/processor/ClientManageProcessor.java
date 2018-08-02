@@ -42,6 +42,9 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 客户端管理Processor
+ */
 public class ClientManageProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -54,10 +57,13 @@ public class ClientManageProcessor implements NettyRequestProcessor {
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         switch (request.getCode()) {
+            // 心跳请求
             case RequestCode.HEART_BEAT:
                 return this.heartBeat(ctx, request);
+            // 注销客户端
             case RequestCode.UNREGISTER_CLIENT:
                 return this.unregisterClient(ctx, request);
+            // 检查客户端配置
             case RequestCode.CHECK_CLIENT_CONFIG:
                 return this.checkClientConfig(ctx, request);
             default:
@@ -73,15 +79,18 @@ public class ClientManageProcessor implements NettyRequestProcessor {
 
     public RemotingCommand heartBeat(ChannelHandlerContext ctx, RemotingCommand request) {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);
+        // 解码心跳包数据
         HeartbeatData heartbeatData = HeartbeatData.decode(request.getBody(), HeartbeatData.class);
+        // 初始化ClientChannelInfo
         ClientChannelInfo clientChannelInfo = new ClientChannelInfo(
             ctx.channel(),
             heartbeatData.getClientID(),
             request.getLanguage(),
             request.getVersion()
         );
-
+        //
         for (ConsumerData data : heartbeatData.getConsumerDataSet()) {
+            // 获取订阅组配置
             SubscriptionGroupConfig subscriptionGroupConfig =
                 this.brokerController.getSubscriptionGroupManager().findSubscriptionGroupConfig(
                     data.getGroupName());
@@ -93,12 +102,14 @@ public class ClientManageProcessor implements NettyRequestProcessor {
                     topicSysFlag = TopicSysFlag.buildSysFlag(false, true);
                 }
                 String newTopic = MixAll.getRetryTopic(data.getGroupName());
+                // 创建topic
                 this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(
                     newTopic,
                     subscriptionGroupConfig.getRetryQueueNums(),
                     PermName.PERM_WRITE | PermName.PERM_READ, topicSysFlag);
             }
 
+            // 注册消费者
             boolean changed = this.brokerController.getConsumerManager().registerConsumer(
                 data.getGroupName(),
                 clientChannelInfo,
@@ -117,6 +128,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
             }
         }
 
+        // 注册生产者
         for (ProducerData data : heartbeatData.getProducerDataSet()) {
             this.brokerController.getProducerManager().registerProducer(data.getGroupName(),
                 clientChannelInfo);
@@ -142,6 +154,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         {
             final String group = requestHeader.getProducerGroup();
             if (group != null) {
+                // 注销生产者
                 this.brokerController.getProducerManager().unregisterProducer(group, clientChannelInfo);
             }
         }
@@ -155,6 +168,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
                 if (null != subscriptionGroupConfig) {
                     isNotifyConsumerIdsChangedEnable = subscriptionGroupConfig.isNotifyConsumerIdsChangedEnable();
                 }
+                // 注销消费者
                 this.brokerController.getConsumerManager().unregisterConsumer(group, clientChannelInfo, isNotifyConsumerIdsChangedEnable);
             }
         }
@@ -174,12 +188,13 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         if (requestBody != null && requestBody.getSubscriptionData() != null) {
             SubscriptionData subscriptionData = requestBody.getSubscriptionData();
 
+            // "TAG"
             if (ExpressionType.isTagType(subscriptionData.getExpressionType())) {
                 response.setCode(ResponseCode.SUCCESS);
                 response.setRemark(null);
                 return response;
             }
-
+            // "SQL92" && 当broker enablePropertyFilter=false时
             if (!this.brokerController.getBrokerConfig().isEnablePropertyFilter()) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
                 response.setRemark("The broker does not support consumer to filter message by " + subscriptionData.getExpressionType());
@@ -187,6 +202,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
             }
 
             try {
+                // 编译表达式-->Selector Parser
                 FilterFactory.INSTANCE.get(subscriptionData.getExpressionType()).compile(subscriptionData.getSubString());
             } catch (Exception e) {
                 log.warn("Client {}@{} filter message, but failed to compile expression! sub={}, error={}",
