@@ -70,6 +70,7 @@ public class ConsumerFilterManager extends ConfigManager {
     }
 
     /**
+     * 构建Consumer Filter Data，注意：不含BoomFilterData
      * Build consumer filter data.Be care, bloom filter data is not included.
      *
      * @return maybe null
@@ -77,6 +78,7 @@ public class ConsumerFilterManager extends ConfigManager {
     public static ConsumerFilterData build(final String topic, final String consumerGroup,
         final String expression, final String type,
         final long clientVersion) {
+        // 若是TAG模式，则不构建ConsumerFilterData
         if (ExpressionType.isTagType(type)) {
             return null;
         }
@@ -91,6 +93,7 @@ public class ConsumerFilterManager extends ConfigManager {
         consumerFilterData.setClientVersion(clientVersion);
         try {
             consumerFilterData.setCompiledExpression(
+                // 编译表达式
                 FilterFactory.INSTANCE.get(type).compile(expression)
             );
         } catch (Throwable e) {
