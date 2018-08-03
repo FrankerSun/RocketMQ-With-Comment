@@ -25,22 +25,31 @@ import org.apache.rocketmq.common.sysflag.MessageSysFlag;
 public class MessageExt extends Message {
     private static final long serialVersionUID = 5720810158625748049L;
 
+    // 消息队列ID
     private int queueId;
-
+    // 存储消息大小
     private int storeSize;
-
+    // 队列偏移量
     private long queueOffset;
+    // 标识位
     private int sysFlag;
+    // 消息创建时间
     private long bornTimestamp;
+    // 生产者地址
     private SocketAddress bornHost;
-
+    // 消息存储时间戳
     private long storeTimestamp;
+    // 存储地址
     private SocketAddress storeHost;
+    // 消息ID
     private String msgId;
+    // 消息在CommitLog中的偏移量
     private long commitLogOffset;
+    // 数据CRC
     private int bodyCRC;
+    // 当前消息被某个订阅组重新消费了几次[订阅组之间独立计数]
     private int reconsumeTimes;
-
+    // 事务偏移量
     private long preparedTransactionOffset;
 
     public MessageExt() {
