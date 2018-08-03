@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
+ * 计算filter的位图
  * Calculate bit map of filter.
  */
 public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
@@ -45,18 +46,20 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
     @Override
     public void dispatch(DispatchRequest request) {
+
         if (!this.brokerConfig.isEnableCalcFilterBitMap()) {
             return;
         }
 
         try {
 
+            // 对于每一条消息，首先根据话题取得所有的消费过滤数据
             Collection<ConsumerFilterData> filterDatas = consumerFilterManager.get(request.getTopic());
 
             if (filterDatas == null || filterDatas.isEmpty()) {
                 return;
             }
-
+            // 这每一条数据代表的就是一条 SQL 过滤语句信息
             Iterator<ConsumerFilterData> iterator = filterDatas.iterator();
             BitsArray filterBitMap = BitsArray.create(
                 this.consumerFilterManager.getBloomFilter().getM()
@@ -80,6 +83,7 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
                 try {
                     MessageEvaluationContext context = new MessageEvaluationContext(request.getPropertiesMap());
 
+                    // 根据SQL语句对消息进行匹配
                     ret = filterData.getCompiledExpression().evaluate(context);
                 } catch (Throwable e) {
                     log.error("Calc filter bit map error!commitLogOffset={}, consumer={}, {}", request.getCommitLogOffset(), filterData, e);
@@ -87,8 +91,8 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
                 log.debug("Result of Calc bit map:ret={}, data={}, props={}, offset={}", ret, filterData, request.getPropertiesMap(), request.getCommitLogOffset());
 
-                // eval true
                 if (ret != null && ret instanceof Boolean && (Boolean) ret) {
+                    // 若匹配，则将在注册客户端阶段计算好的BloomFilterData中的映射位信息赋值到filterBitMap中(位数组相应位设为1)
                     consumerFilterManager.getBloomFilter().hashTo(
                         filterData.getBloomFilterData(),
                         filterBitMap

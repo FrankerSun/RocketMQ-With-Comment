@@ -20,6 +20,7 @@ package org.apache.rocketmq.filter.expression;
 import java.util.Map;
 
 /**
+ * 计算表达式的上下文
  * Context of evaluate expression.
  *
  * Compare to org.apache.activemq.filter.MessageEvaluationContext, this is just an interface.

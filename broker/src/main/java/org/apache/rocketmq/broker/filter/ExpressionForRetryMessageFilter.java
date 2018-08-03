@@ -27,8 +27,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
- * Support filter to retry topic.
- * <br>It will decode properties first in order to get real topic.
+ * 为retry topic提供Filter支持
+ * <br>
+ * It will decode properties first in order to get real topic.
  */
 public class ExpressionForRetryMessageFilter extends ExpressionMessageFilter {
     public ExpressionForRetryMessageFilter(SubscriptionData subscriptionData, ConsumerFilterData consumerFilterData,

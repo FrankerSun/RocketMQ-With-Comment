@@ -59,27 +59,29 @@ public class ExpressionMessageFilter implements MessageFilter {
 
     @Override
     public boolean isMatchedByConsumeQueue(Long tagsCode, ConsumeQueueExt.CqExtUnit cqExtUnit) {
+        // 非Expression模式，返回true
         if (null == subscriptionData) {
             return true;
         }
-
+        // 不处理ClassFilterMode
         if (subscriptionData.isClassFilterMode()) {
             return true;
         }
 
-        // by tags code.
+        // 非ClassFilterMode：包含TAG/SQL92两种
         if (ExpressionType.isTagType(subscriptionData.getExpressionType())) {
-
+            // 如果是TAG模式，只需要比对tag的hashcode,因为consumeQueue只包含了tag hashcode。
             if (tagsCode == null) {
                 return true;
             }
-
+            // 全部订阅返回true
             if (subscriptionData.getSubString().equals(SubscriptionData.SUB_ALL)) {
                 return true;
             }
-
+            // 判断订阅code里是否存在tagsCode[has code of tags]
             return subscriptionData.getCodeSet().contains(tagsCode.intValue());
         } else {
+            // SQL92
             // no expression or no bloom
             if (consumerFilterData == null || consumerFilterData.getExpression() == null
                 || consumerFilterData.getCompiledExpression() == null || consumerFilterData.getBloomFilterData() == null) {
@@ -136,15 +138,15 @@ public class ExpressionMessageFilter implements MessageFilter {
             || realFilterData.getCompiledExpression() == null) {
             return true;
         }
-
+        // isMatchedByCommitLog只为ExpressionType.SQL92服务
         if (tempProperties == null && msgBuffer != null) {
+            // 解析消息体得到tag
             tempProperties = MessageDecoder.decodeProperties(msgBuffer);
         }
-
         Object ret = null;
         try {
             MessageEvaluationContext context = new MessageEvaluationContext(tempProperties);
-
+            // 进行匹配
             ret = realFilterData.getCompiledExpression().evaluate(context);
         } catch (Throwable e) {
             log.error("Message Filter error, " + realFilterData + ", " + tempProperties, e);

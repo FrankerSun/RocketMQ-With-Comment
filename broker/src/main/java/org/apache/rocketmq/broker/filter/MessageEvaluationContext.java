@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 消息的计算表达式的上下文
  * Evaluation context from message.
  */
 public class MessageEvaluationContext implements EvaluationContext {
