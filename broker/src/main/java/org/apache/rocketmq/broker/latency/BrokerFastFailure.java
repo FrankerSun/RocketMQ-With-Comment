@@ -58,6 +58,7 @@ public class BrokerFastFailure {
             @Override
             public void run() {
                 if (brokerController.getBrokerConfig().isBrokerFastFailureEnable()) {
+                    // 定时清除一些过期的请求
                     cleanExpiredRequest();
                 }
             }
@@ -65,6 +66,7 @@ public class BrokerFastFailure {
     }
 
     private void cleanExpiredRequest() {
+        // 检查操作系统page cache[页高速缓冲存储器]是否忙碌，如忙碌则返回消息，不进行清理
         while (this.brokerController.getMessageStore().isOSPageCacheBusy()) {
             try {
                 if (!this.brokerController.getSendThreadPoolQueue().isEmpty()) {
@@ -82,13 +84,18 @@ public class BrokerFastFailure {
             }
         }
 
+        // 清理发送线程--最大等待时间
         cleanExpiredRequestInQueue(this.brokerController.getSendThreadPoolQueue(),
             this.brokerController.getBrokerConfig().getWaitTimeMillsInSendQueue());
 
+        // 清理拉取线程--最大等待时间
         cleanExpiredRequestInQueue(this.brokerController.getPullThreadPoolQueue(),
             this.brokerController.getBrokerConfig().getWaitTimeMillsInPullQueue());
     }
 
+    /**
+     * 清理blockingQueu，超时返回系统忙碌
+     */
     void cleanExpiredRequestInQueue(final BlockingQueue<Runnable> blockingQueue, final long maxWaitTimeMillsInQueue) {
         while (true) {
             try {
