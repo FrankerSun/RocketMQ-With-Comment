@@ -428,7 +428,7 @@ public abstract class NettyRemotingAbstract {
                         responseFuture.putResponse(null);
                         responseTable.remove(opaque);
                         try {
-                            //发送成功后未返回消息，则调用回调方法
+                            //调用回调方法
                             executeInvokeCallback(responseFuture);
                         } catch (Throwable e) {
                             log.warn("excute callback in writeAndFlush addListener, and callback throw", e);

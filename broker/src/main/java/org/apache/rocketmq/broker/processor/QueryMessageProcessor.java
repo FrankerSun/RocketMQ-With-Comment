@@ -38,6 +38,10 @@ import org.apache.rocketmq.store.SelectMappedBufferResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 查询消息的处理器
+ *     主要有两个逻辑：queryMessage 和 viewMessageById
+ */
 public class QueryMessageProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -84,6 +88,7 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
             requestHeader.setMaxNum(this.brokerController.getMessageStoreConfig().getDefaultQueryMaxNum());
         }
 
+        // 调用MessageStore.queryMessage查询消息
         final QueryMessageResult queryMessageResult =
             this.brokerController.getMessageStore().queryMessage(requestHeader.getTopic(),
                 requestHeader.getKey(), requestHeader.getMaxNum(), requestHeader.getBeginTimestamp(),
@@ -131,6 +136,7 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
 
         response.setOpaque(request.getOpaque());
 
+        // 调用MessageStore.selectOneMessageByOffset查询消息
         final SelectMappedBufferResult selectMappedBufferResult =
             this.brokerController.getMessageStore().selectOneMessageByOffset(requestHeader.getOffset());
         if (selectMappedBufferResult != null) {
@@ -141,6 +147,7 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
                 FileRegion fileRegion =
                     new OneMessageTransfer(response.encodeHeader(selectMappedBufferResult.getSize()),
                         selectMappedBufferResult);
+                // 异步返回
                 ctx.channel().writeAndFlush(fileRegion).addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
