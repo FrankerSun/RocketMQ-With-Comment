@@ -23,11 +23,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+/**
+ * ByteBuffer + SelectMappedBufferResult
+ * 实现了引用计数与FileRegion[zero-copy]
+ */
 public class OneMessageTransfer extends AbstractReferenceCounted implements FileRegion {
     private final ByteBuffer byteBufferHeader;
     private final SelectMappedBufferResult selectMappedBufferResult;
 
     /**
+     * 已经传输过的字节数组大小
      * Bytes which were transferred already.
      */
     private long transferred;
