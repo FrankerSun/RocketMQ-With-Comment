@@ -78,6 +78,7 @@ public class HAConnection {
         return socketChannel;
     }
 
+    /* */
     class ReadSocketService extends ServiceThread {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024;
         private final Selector selector;
@@ -100,6 +101,7 @@ public class HAConnection {
             while (!this.isStopped()) {
                 try {
                     this.selector.select(1000);
+                    //
                     boolean ok = this.processReadEvent();
                     if (!ok) {
                         HAConnection.log.error("processReadEvent error");
@@ -190,6 +192,7 @@ public class HAConnection {
         }
     }
 
+    /* */
     class WriteSocketService extends ServiceThread {
         private final Selector selector;
         private final SocketChannel socketChannel;

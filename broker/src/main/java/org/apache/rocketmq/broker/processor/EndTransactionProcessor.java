@@ -37,6 +37,9 @@ import org.apache.rocketmq.store.PutMessageResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 处理结束事务请求的Process
+ */
 public class EndTransactionProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -52,6 +55,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         final EndTransactionRequestHeader requestHeader =
             (EndTransactionRequestHeader) request.decodeCommandCustomHeader(EndTransactionRequestHeader.class);
 
+        // 只处理Commit和RollBack，其余返回NULL
         if (requestHeader.getFromTransactionCheck()) {
             switch (requestHeader.getCommitOrRollback()) {
                 case MessageSysFlag.TRANSACTION_NOT_TYPE: {
@@ -122,7 +126,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
                 response.setRemark("the producer group wrong");
                 return response;
             }
-            // 校验同一队列
+            // 校验同一队列 --> tranStateTableOffset
             if (msgExt.getQueueOffset() != requestHeader.getTranStateTableOffset()) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
                 response.setRemark("the transaction state table offset wrong");
@@ -137,11 +141,13 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
 
             // 事务消息转换
             MessageExtBrokerInner msgInner = this.endMessageTransaction(msgExt);
+            // 更新sysFlag标记位的值：按照生产者requestHeader里的事务消息状态进行位运算，修改的是低位起第3和第4字节的值
             msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), requestHeader.getCommitOrRollback()));
 
             msgInner.setQueueOffset(requestHeader.getTranStateTableOffset());
             msgInner.setPreparedTransactionOffset(requestHeader.getCommitLogOffset());
             msgInner.setStoreTimestamp(msgExt.getStoreTimestamp());
+            // 如果事务消息状态为TRANSACTION_ROLLBACK_TYPE，则将msgInner的body置为null：消费端不会消费
             if (MessageSysFlag.TRANSACTION_ROLLBACK_TYPE == requestHeader.getCommitOrRollback()) {
                 msgInner.setBody(null);
             }
@@ -206,7 +212,9 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         return false;
     }
 
-    /* 事务消息转换*/
+    /**
+     * 事务消息转换（根据MessageExt构建MessageExtBrokerInner）
+     */
     private MessageExtBrokerInner endMessageTransaction(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         msgInner.setBody(msgExt.getBody());
@@ -227,6 +235,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         msgInner.setReconsumeTimes(msgExt.getReconsumeTimes());
 
         msgInner.setWaitStoreMsgOK(false);
+        // 清除PROPERTY_DELAY_TIME_LEVEL属性
         MessageAccessor.clearProperty(msgInner, MessageConst.PROPERTY_DELAY_TIME_LEVEL);
 
         msgInner.setTopic(msgExt.getTopic());
