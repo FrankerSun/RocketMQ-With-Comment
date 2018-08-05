@@ -109,6 +109,9 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /**
+     * Consumer收到后调用rebalanceService.wakeup方法，唤醒RebalanceService服务线程
+     */
     public RemotingCommand notifyConsumerIdsChanged(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         try {

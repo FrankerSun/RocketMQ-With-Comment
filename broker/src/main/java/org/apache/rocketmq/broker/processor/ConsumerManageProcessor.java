@@ -37,6 +37,9 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 消费者管理
+ */
 public class ConsumerManageProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -67,6 +70,9 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /**
+     * 获取消费组里所有的消费者
+     */
     public RemotingCommand getConsumerListByGroup(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =
@@ -101,6 +107,9 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /**
+     * 更新消费进度Offset
+     */
     private RemotingCommand updateConsumerOffset(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =
@@ -115,6 +124,9 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /**
+     * 获取消费进度Offset
+     */
     private RemotingCommand queryConsumerOffset(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =

@@ -366,7 +366,7 @@ public abstract class NettyRemotingAbstract {
 
         try {
             final ResponseFuture responseFuture = new ResponseFuture(opaque, timeoutMillis, null, null);
-            //将请求相关的 ResponseFuture 方在 responseTable:ConcurrentHashMap 中
+            //将请求相关的 ResponseFuture 放在 responseTable:ConcurrentHashMap 中
             this.responseTable.put(opaque, responseFuture);
             final SocketAddress addr = channel.remoteAddress();
             channel.writeAndFlush(request).addListener(new ChannelFutureListener() {

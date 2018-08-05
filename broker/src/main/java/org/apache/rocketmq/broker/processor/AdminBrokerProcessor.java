@@ -116,6 +116,11 @@ import org.apache.rocketmq.store.SelectMappedBufferResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 专门处理Admin端请求的处理器
+ * 包括topic、broker config、offset、lock/unlock mq、
+ * subscription group、running info、consume state等
+ */
 public class AdminBrokerProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
