@@ -118,6 +118,9 @@ public class Broker2Client {
         return resetOffset(topic, group, timeStamp, isForce, false);
     }
 
+    /**
+     *
+     */
     public RemotingCommand resetOffset(String topic, String group, long timeStamp, boolean isForce,
         boolean isC) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -151,6 +154,7 @@ public class Broker2Client {
 
                 timeStampOffset = this.brokerController.getMessageStore().getMaxOffsetInQueue(topic, i);
             } else {
+                //根据时间找offset
                 timeStampOffset = this.brokerController.getMessageStore().getOffsetInQueueByTime(topic, i, timeStamp);
             }
 
@@ -165,7 +169,7 @@ public class Broker2Client {
                 offsetTable.put(mq, consumerOffset);
             }
         }
-
+        //给Consumer发送请求重置offset
         ResetOffsetRequestHeader requestHeader = new ResetOffsetRequestHeader();
         requestHeader.setTopic(topic);
         requestHeader.setGroup(group);

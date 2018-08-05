@@ -230,6 +230,7 @@ public class CommitLog {
     }
 
     /**
+     * 检查消息并返回消息大小
      * check the message and returns the message size
      *
      * @return 0 Come the end of the file // >0 Normal messages // -1 Message checksum failure

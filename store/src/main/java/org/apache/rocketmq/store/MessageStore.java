@@ -28,6 +28,7 @@ import org.apache.rocketmq.common.message.MessageExtBatch;
 public interface MessageStore {
 
     /**
+     * 加载之前存储的消息
      * Load previously stored messages.
      *
      * @return true if success; false otherwise.
@@ -35,6 +36,7 @@ public interface MessageStore {
     boolean load();
 
     /**
+     * 开启 消息仓库
      * Launch this message store.
      *
      * @throws Exception if there is any error.
@@ -42,16 +44,19 @@ public interface MessageStore {
     void start() throws Exception;
 
     /**
+     * 关闭 消息仓库
      * Shutdown this message store.
      */
     void shutdown();
 
     /**
+     * 销毁 消息存储。一般情况下，所有持久化的文件应当被移除掉
      * Destroy this message store. Generally, all persistent files should be removed after invocation.
      */
     void destroy();
 
     /**
+     * 存储一个消息到 仓库里
      * Store a message into store.
      *
      * @param msg Message instance to store
@@ -60,6 +65,7 @@ public interface MessageStore {
     PutMessageResult putMessage(final MessageExtBrokerInner msg);
 
     /**
+     * 批量存储消息
      * Store a batch of messages.
      *
      * @param messageExtBatch Message batch.
@@ -344,6 +350,7 @@ public interface MessageStore {
     boolean isTransientStorePoolDeficient();
 
     /**
+     * 获得dispatch列表
      * Get the dispatcher list.
      *
      * @return list of the dispatcher.
@@ -351,6 +358,7 @@ public interface MessageStore {
     LinkedList<CommitLogDispatcher> getDispatcherList();
 
     /**
+     * 根据topic-queue获得消费队列
      * Get consume queue of the topic/queue.
      *
      * @param topic Topic.
