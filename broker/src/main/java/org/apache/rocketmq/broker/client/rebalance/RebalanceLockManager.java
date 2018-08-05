@@ -32,6 +32,7 @@ public class RebalanceLockManager {
     private final static long REBALANCE_LOCK_MAX_LIVE_TIME = Long.parseLong(System.getProperty(
         "rocketmq.broker.rebalance.lockMaxLiveTime", "60000"));
     private final Lock lock = new ReentrantLock();
+    // [important] 一个消费者组下面所有消息队列的锁的情况
     private final ConcurrentMap<String/* group */, ConcurrentHashMap<MessageQueue, LockEntry>> mqLockTable =
         new ConcurrentHashMap<String, ConcurrentHashMap<MessageQueue, LockEntry>>(1024);
 
@@ -97,6 +98,11 @@ public class RebalanceLockManager {
         return true;
     }
 
+    /**
+     * 1. 获取consumerGroup下面的所有ConcurrentHashMap<MessageQueue, LockEntry>集合
+     * 2.1 若集合不为空，则以MessageQueue对象获取对应的LockEntry，检查是否被clientId锁住、锁是否过期
+     * 2.2 若是被该clientId锁住且没有过期，则更新LockEntry的lastUpdateTimestamp
+     */
     private boolean isLocked(final String group, final MessageQueue mq, final String clientId) {
         ConcurrentHashMap<MessageQueue, LockEntry> groupValue = this.mqLockTable.get(group);
         if (groupValue != null) {
@@ -114,6 +120,10 @@ public class RebalanceLockManager {
         return false;
     }
 
+    /**
+     * 1. 遍历集合，将Set<MessageQueue>分为两部分：锁住和未锁住的
+     * 2. 对未锁队列进行操作，也就是设置LockEntry的ClientID和lastLockTimestamp
+     */
     public Set<MessageQueue> tryLockBatch(final String group, final Set<MessageQueue> mqs,
         final String clientId) {
         Set<MessageQueue> lockedMqs = new HashSet<MessageQueue>(mqs.size());
@@ -189,6 +199,9 @@ public class RebalanceLockManager {
         return lockedMqs;
     }
 
+    /**
+     * 批量解锁MessageQueue
+     */
     public void unlockBatch(final String group, final Set<MessageQueue> mqs, final String clientId) {
         try {
             this.lock.lockInterruptibly();
@@ -232,7 +245,9 @@ public class RebalanceLockManager {
     }
 
     static class LockEntry {
+        // 客户端ID
         private String clientId;
+        // 锁住MessageQueue的时间点
         private volatile long lastUpdateTimestamp = System.currentTimeMillis();
 
         public String getClientId() {
