@@ -729,6 +729,9 @@ public class BrokerController {
         }
     }
 
+    /**
+     * 注册broker到所有的nameServer上
+     */
     public synchronized void registerBrokerAll(final boolean checkOrderConfig, boolean oneway) {
         TopicConfigSerializeWrapper topicConfigWrapper = this.getTopicConfigManager().buildTopicConfigSerializeWrapper();
 

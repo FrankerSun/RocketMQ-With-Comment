@@ -324,7 +324,7 @@ public class TopicConfigManager extends ConfigManager {
 
     /**
      *
-     * 更新topic配置
+     * 更新topic配置[没有则新建]
      */
     public void updateTopicConfig(final TopicConfig topicConfig) {
         // 更新topicConfigTable

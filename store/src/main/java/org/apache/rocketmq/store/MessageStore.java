@@ -166,6 +166,7 @@ public interface MessageStore {
     HashMap<String, String> getRuntimeInfo();
 
     /**
+     * 获得commitLog最大偏移量
      * Get the maximum commit log offset.
      *
      * @return maximum commit log offset.
@@ -173,6 +174,7 @@ public interface MessageStore {
     long getMaxPhyOffset();
 
     /**
+     * 获得commitLog最小偏移量
      * Get the minimum commit log offset.
      *
      * @return minimum commit log offset.
@@ -180,6 +182,7 @@ public interface MessageStore {
     long getMinPhyOffset();
 
     /**
+     * 获取指定队列最早存储的一条消息的存储时间
      * Get the store time of the earliest message in the given queue.
      *
      * @param topic Topic of the messages to query.
@@ -189,6 +192,7 @@ public interface MessageStore {
     long getEarliestMessageTime(final String topic, final int queueId);
 
     /**
+     * 获取store里最早存储的一条消息的存储时间
      * Get the store time of the earliest message in this store.
      *
      * @return timestamp of the earliest message in this store.
