@@ -21,17 +21,18 @@ public class NettyServerConfig implements Cloneable {
     private int serverWorkerThreads = 8;//Netty服务工作线程数量
     private int serverCallbackExecutorThreads = 0;//Netty服务异步回调线程池线程数量
     private int serverSelectorThreads = 3;//Netty Selector线程数量
-    private int serverOnewaySemaphoreValue = 256;//控制单向的信号量
-    private int serverAsyncSemaphoreValue = 64;//控制异步信号量
-    private int serverChannelMaxIdleTimeSeconds = 120;//服务空闲心跳检测时间间隔单位秒
+    private int serverOnewaySemaphoreValue = 256;//控制单向请求的信号量最大值
+    private int serverAsyncSemaphoreValue = 64;//控制异步请求信号量最大值
+    private int serverChannelMaxIdleTimeSeconds = 120;//服务端空闲心跳检测时间间隔，单位秒
 
     private int serverSocketSndBufSize = NettySystemConfig.socketSndbufSize;//Netty发送缓冲区大小
     private int serverSocketRcvBufSize = NettySystemConfig.socketRcvbufSize;//Netty接受缓冲区大小
     private boolean serverPooledByteBufAllocatorEnable = true;//是否使用Netty内存池
 
     /**
-     * make make install
+     * Epoll：mmap+红黑树+双链表数据结构+回调函数ep_poll_callback
      *
+     * make make install
      *
      * ../glibc-2.10.1/configure \ --prefix=/usr \ --with-headers=/usr/include \
      * --host=x86_64-linux-gnu \ --build=x86_64-pc-linux-gnu \ --without-gd

@@ -29,10 +29,15 @@ import org.slf4j.LoggerFactory;
 public class NettyDecoder extends LengthFieldBasedFrameDecoder {
     private static final Logger log = LoggerFactory.getLogger(RemotingHelper.ROCKETMQ_REMOTING);
 
+    // 数据包的最大长度   默认16777216
     private static final int FRAME_MAX_LENGTH =
         Integer.parseInt(System.getProperty("com.rocketmq.remoting.frameMaxLength", "16777216"));
 
     public NettyDecoder() {
+        // lengthFieldOffset 起始偏移量，默认为0
+        // lengthFieldLength 数据长度，默认为4
+        // lengthAdjustment 数据长度调节量，默认为0
+        // initialBytesToStrip 数据解码时移除的字节量，默认为4
         super(FRAME_MAX_LENGTH, 0, 4, 0, 4);
     }
 
