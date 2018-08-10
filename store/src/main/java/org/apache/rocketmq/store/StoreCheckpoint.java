@@ -27,13 +27,19 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 存储 检查点 时间戳
+ */
 public class StoreCheckpoint {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final RandomAccessFile randomAccessFile;
     private final FileChannel fileChannel;
     private final MappedByteBuffer mappedByteBuffer;
+    // 物理 消息 时间戳
     private volatile long physicMsgTimestamp = 0;
+    // 逻辑 消息 时间戳
     private volatile long logicsMsgTimestamp = 0;
+    // 索引 消息 时间戳
     private volatile long indexMsgTimestamp = 0;
 
     public StoreCheckpoint(final String scpPath) throws IOException {
@@ -75,6 +81,9 @@ public class StoreCheckpoint {
         }
     }
 
+    /**
+     * 将时间戳刷盘
+     */
     public void flush() {
         this.mappedByteBuffer.putLong(0, this.physicMsgTimestamp);
         this.mappedByteBuffer.putLong(8, this.logicsMsgTimestamp);

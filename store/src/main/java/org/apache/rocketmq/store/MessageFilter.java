@@ -19,8 +19,12 @@ package org.apache.rocketmq.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+/**
+ * 消息过滤接口
+ */
 public interface MessageFilter {
     /**
+     * 当消息接收或存储在消息队列时，会对消息进行过滤，过滤模式有两种：bit map 或 tags code
      * match by tags code or filter bit map which is calculated when message received
      * and stored in consume queue ext.
      *
@@ -31,6 +35,10 @@ public interface MessageFilter {
         final ConsumeQueueExt.CqExtUnit cqExtUnit);
 
     /**
+     * 匹配存储在CommitLog里的消息内容
+     * msgBuffer 和 properties 不全为空，。
+     * 如果是在store中调用，properties 为null; 如果是在PullRequestHoldService中调用，msgBuffer 为空
+     *
      * match by message content which are stored in commit log.
      * <br>{@code msgBuffer} and {@code properties} are not all null.If invoked in store,
      * {@code properties} is null;If invoked in {@code PullRequestHoldService}, {@code msgBuffer} is null.

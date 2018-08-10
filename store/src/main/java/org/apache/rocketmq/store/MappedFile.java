@@ -41,6 +41,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ * 文件抽象
+ * 初始化、清理、添加msg、随机读取、文件commit与flush、
+ */
 public class MappedFile extends ReferenceResource {
     public static final int OS_PAGE_SIZE = 1024 * 4;
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
@@ -122,6 +126,10 @@ public class MappedFile extends ReferenceResource {
         }
     }
 
+    /**
+     * 嵌套调用，获取最深层的attachment 或者 viewedBuffer方法
+     * 转化为ByteBuffer对象
+     */
     private static ByteBuffer viewed(ByteBuffer buffer) {
         String methodName = "viewedBuffer";
 
@@ -148,6 +156,11 @@ public class MappedFile extends ReferenceResource {
         return TOTAL_MAPPED_VIRTUAL_MEMORY.get();
     }
 
+    /**
+     * 初始化文件名，大小
+     * 设置transientStorePool
+     * 设置writeBuffer，从transientStorePool借一个出来，可能为null
+     */
     public void init(final String fileName, final int fileSize,
         final TransientStorePool transientStorePool) throws IOException {
         init(fileName, fileSize);
@@ -155,6 +168,12 @@ public class MappedFile extends ReferenceResource {
         this.transientStorePool = transientStorePool;
     }
 
+    /**
+     * 初始化文件名，大小
+     * 设置fileFromOffset代表文件对应的偏移量
+     * 得到fileChannel，mappedByteBuffer 得到IO相关对象
+     * 计数TOTAL_MAPPED_VIRTUAL_MEMORY,TOTAL_MAPPED_FILES更新
+     */
     private void init(final String fileName, final int fileSize) throws IOException {
         this.fileName = fileName;
         this.fileSize = fileSize;
@@ -455,6 +474,12 @@ public class MappedFile extends ReferenceResource {
         return true;
     }
 
+    /**
+     * 参数intervalForcibly代表距离上一次shutdown至少要这么长时间
+     * 调用shutdown
+     * 如果引用清理干净了删除文件，打log
+     * 否则false
+     */
     public boolean destroy(final long intervalForcibly) {
         this.shutdown(intervalForcibly);
 

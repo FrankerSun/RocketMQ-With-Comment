@@ -19,6 +19,8 @@ package org.apache.rocketmq.store;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 自旋锁--存放消息
+ * 建议在低竞争条件下使用这个锁
  * Spin lock Implementation to put message, suggest using this with low race conditions
  */
 public class PutMessageSpinLock implements PutMessageLock {
