@@ -20,11 +20,13 @@ import java.nio.ByteBuffer;
 import org.apache.rocketmq.common.message.MessageExtBatch;
 
 /**
+ * 写入消息的回调接口
  * Write messages callback interface
  */
 public interface AppendMessageCallback {
 
     /**
+     * 在消息序列化之后，写入MapedByteBuffer
      * After message serialization, write MapedByteBuffer
      *
      * @return How many bytes to write
@@ -33,6 +35,7 @@ public interface AppendMessageCallback {
         final int maxBlank, final MessageExtBrokerInner msg);
 
     /**
+     * 当批量消息序列化后，写入MapedByteBuffer
      * After batched message serialization, write MapedByteBuffer
      *
      * @param messageExtBatch, backed up by a byte array
