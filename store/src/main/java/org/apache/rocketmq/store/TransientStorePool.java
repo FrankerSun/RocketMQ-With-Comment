@@ -18,9 +18,11 @@ package org.apache.rocketmq.store;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
+
 import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
+
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.apache.rocketmq.store.util.LibC;
@@ -28,12 +30,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ * 临时存储池--堆外内存(OS内存)
+ */
 public class TransientStorePool {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    // 存储池大小，默认为5
     private final int poolSize;
+    // CommitLog文件大小，默认为1G
     private final int fileSize;
+    // 可用的buffer
     private final Deque<ByteBuffer> availableBuffers;
+    // 存储配置
     private final MessageStoreConfig storeConfig;
 
     public TransientStorePool(final MessageStoreConfig storeConfig) {
@@ -44,10 +53,12 @@ public class TransientStorePool {
     }
 
     /**
+     * 初始化  分配 5 * 1G 堆外内存
      * It's a heavy init method.
      */
     public void init() {
         for (int i = 0; i < poolSize; i++) {
+            // 分配OS内存，不需内存拷贝
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(fileSize);
 
             final long address = ((DirectBuffer) byteBuffer).address();
@@ -66,12 +77,18 @@ public class TransientStorePool {
         }
     }
 
+    /**
+     * 收回一个buffer
+     */
     public void returnBuffer(ByteBuffer byteBuffer) {
         byteBuffer.position(0);
         byteBuffer.limit(fileSize);
         this.availableBuffers.offerFirst(byteBuffer);
     }
 
+    /**
+     * 将一个buffer借出
+     */
     public ByteBuffer borrowBuffer() {
         ByteBuffer buffer = availableBuffers.pollFirst();
         if (availableBuffers.size() < poolSize * 0.4) {
@@ -80,6 +97,9 @@ public class TransientStorePool {
         return buffer;
     }
 
+    /**
+     * 剩余buffer数
+     */
     public int remainBufferNumbs() {
         if (storeConfig.isTransientStorePoolEnable()) {
             return availableBuffers.size();
