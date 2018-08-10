@@ -17,12 +17,13 @@
 package org.apache.rocketmq.store;
 
 /**
+ * 写消息到commitLog的返回码
  * When write a message to the commit log, returns code
  */
 public enum AppendMessageStatus {
-    PUT_OK,
-    END_OF_FILE,
-    MESSAGE_SIZE_EXCEEDED,
-    PROPERTIES_SIZE_EXCEEDED,
-    UNKNOWN_ERROR,
+    PUT_OK,                   // 写入成功
+    END_OF_FILE,              // 写入文件空间不足
+    MESSAGE_SIZE_EXCEEDED,    // 消息大小超过最大值
+    PROPERTIES_SIZE_EXCEEDED, // message properties length too long
+    UNKNOWN_ERROR,            // 未知错误
 }

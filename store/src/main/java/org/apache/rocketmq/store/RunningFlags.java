@@ -18,16 +18,17 @@ package org.apache.rocketmq.store;
 
 public class RunningFlags {
 
+    // 不可读
     private static final int NOT_READABLE_BIT = 1;
-
+    // 不可写
     private static final int NOT_WRITEABLE_BIT = 1 << 1;
-
+    // 写入逻辑队列错误
     private static final int WRITE_LOGICS_QUEUE_ERROR_BIT = 1 << 2;
-
+    // 写入索引文件错误
     private static final int WRITE_INDEX_FILE_ERROR_BIT = 1 << 3;
-
+    // 磁盘撑爆
     private static final int DISK_FULL_BIT = 1 << 4;
-
+    // 标志位  important
     private volatile int flagBits = 0;
 
     public RunningFlags() {
@@ -94,6 +95,9 @@ public class RunningFlags {
         return result;
     }
 
+    /**
+     * 消息队列不能写入，设置标识位
+     */
     public void makeLogicsQueueError() {
         this.flagBits |= WRITE_LOGICS_QUEUE_ERROR_BIT;
     }
@@ -106,6 +110,9 @@ public class RunningFlags {
         return false;
     }
 
+    /**
+     * 索引文件不能写入，修改标志位
+     */
     public void makeIndexFileError() {
         this.flagBits |= WRITE_INDEX_FILE_ERROR_BIT;
     }
@@ -118,12 +125,18 @@ public class RunningFlags {
         return false;
     }
 
+    /**
+     * 磁盘空间不足，修改标志位flagBits
+     */
     public boolean getAndMakeDiskFull() {
         boolean result = !((this.flagBits & DISK_FULL_BIT) == DISK_FULL_BIT);
         this.flagBits |= DISK_FULL_BIT;
         return result;
     }
 
+    /**
+     * 磁盘清理后，修改标志位flagBits
+     */
     public boolean getAndMakeDiskOK() {
         boolean result = !((this.flagBits & DISK_FULL_BIT) == DISK_FULL_BIT);
         this.flagBits &= ~DISK_FULL_BIT;
