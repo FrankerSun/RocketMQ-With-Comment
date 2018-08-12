@@ -27,20 +27,26 @@ import org.slf4j.LoggerFactory;
 public class ConsumeQueue {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    // 消息存储 单元大小
     public static final int CQ_STORE_UNIT_SIZE = 20;
     private static final Logger LOG_ERROR = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
 
+    // 默认消息存储
     private final DefaultMessageStore defaultMessageStore;
-
+    // 文件夹抽象
     private final MappedFileQueue mappedFileQueue;
     private final String topic;
     private final int queueId;
     private final ByteBuffer byteBufferIndex;
 
     private final String storePath;
+    // 文件大小--默认是 300000 * 20字节
     private final int mappedFileSize;
+    // 对应commitLog最大物理偏移量
     private long maxPhysicOffset = -1;
+    // volatile 最小逻辑偏移量
     private volatile long minLogicOffset = 0;
+    // 消息扩展属性
     private ConsumeQueueExt consumeQueueExt = null;
 
     public ConsumeQueue(
@@ -64,6 +70,7 @@ public class ConsumeQueue {
 
         this.byteBufferIndex = ByteBuffer.allocate(CQ_STORE_UNIT_SIZE);
 
+        // 如果开启消息扩展，则进行赋值
         if (defaultMessageStore.getMessageStoreConfig().isEnableConsumeQueueExt()) {
             this.consumeQueueExt = new ConsumeQueueExt(
                 topic,
@@ -75,15 +82,22 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 加载消息队列mappedFileQueue文件到内存里
+     */
     public boolean load() {
         boolean result = this.mappedFileQueue.load();
         log.info("load consume queue " + this.topic + "-" + this.queueId + " " + (result ? "OK" : "Failed"));
+        // 如果拓展文件可读，加载消息队列扩展ConsumeQueueExt
         if (isExtReadEnable()) {
             result &= this.consumeQueueExt.load();
         }
         return result;
     }
 
+    /**
+     * 恢复消息队列文件[最后三个文件]
+     */
     public void recover() {
         final List<MappedFile> mappedFiles = this.mappedFileQueue.getMappedFiles();
         if (!mappedFiles.isEmpty()) {
@@ -142,7 +156,7 @@ public class ConsumeQueue {
             this.mappedFileQueue.setFlushedWhere(processOffset);
             this.mappedFileQueue.setCommittedWhere(processOffset);
             this.mappedFileQueue.truncateDirtyFiles(processOffset);
-
+            // 如果支持消息队列扩展，则进行恢复，并根据maxExtAddr删去一些记录
             if (isExtReadEnable()) {
                 this.consumeQueueExt.recover();
                 log.info("Truncate consume queue extend file by max {}", maxExtAddr);
@@ -151,6 +165,9 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 找到最接近timestamp(消息发送时间)的逻辑队列的偏移量
+     */
     public long getOffsetInQueueByTime(final long timestamp) {
         MappedFile mappedFile = this.mappedFileQueue.getMappedFileByTime(timestamp);
         if (mappedFile != null) {
@@ -220,6 +237,9 @@ public class ConsumeQueue {
         return 0;
     }
 
+    /**
+     * 异常停止服务后重启，需要清理一波脏数据
+     */
     public void truncateDirtyLogicFiles(long phyOffet) {
 
         int logicFileSize = this.mappedFileSize;
@@ -241,6 +261,7 @@ public class ConsumeQueue {
                     long tagsCode = byteBuffer.getLong();
 
                     if (0 == i) {
+                        // 如果超过物理偏移量则删除文件
                         if (offset >= phyOffet) {
                             this.mappedFileQueue.deleteLastMappedFile();
                             break;
@@ -290,6 +311,9 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 获取消息队列文件的最后一个偏移量
+     */
     public long getLastOffset() {
         long lastOffset = -1;
 
@@ -310,6 +334,7 @@ public class ConsumeQueue {
                 byteBuffer.getLong();
 
                 if (offset >= 0 && size > 0) {
+                    // 偏移量 + 长度
                     lastOffset = offset + size;
                 } else {
                     break;
@@ -320,7 +345,10 @@ public class ConsumeQueue {
         return lastOffset;
     }
 
-    /* */
+
+    /**
+     * 刷盘
+     */
     public boolean flush(final int flushLeastPages) {
         boolean result = this.mappedFileQueue.flush(flushLeastPages);
         if (isExtReadEnable()) {
@@ -330,12 +358,18 @@ public class ConsumeQueue {
         return result;
     }
 
+    /**
+     * 删除过期文件
+     */
     public int deleteExpiredFile(long offset) {
         int cnt = this.mappedFileQueue.deleteExpiredFileByOffset(offset, CQ_STORE_UNIT_SIZE);
         this.correctMinOffset(offset);
         return cnt;
     }
 
+    /**
+     * 纠正minLogicOffset
+     */
     public void correctMinOffset(long phyMinOffset) {
         MappedFile mappedFile = this.mappedFileQueue.getFirstMappedFile();
         long minExtAddr = 1;
@@ -420,6 +454,9 @@ public class ConsumeQueue {
         this.defaultMessageStore.getRunningFlags().makeLogicsQueueError();
     }
 
+    /**
+     * 存放消息位置信息
+     */
     private boolean putMessagePositionInfo(final long offset, final int size, final long tagsCode,
         final long cqOffset) {
 
@@ -473,6 +510,9 @@ public class ConsumeQueue {
         return false;
     }
 
+    /**
+     * 文件填充空白数据
+     */
     private void fillPreBlank(final MappedFile mappedFile, final long untilWhere) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(CQ_STORE_UNIT_SIZE);
         byteBuffer.putLong(0L);
@@ -503,6 +543,9 @@ public class ConsumeQueue {
         return null;
     }
 
+    /**
+     * 根据offset从ext中获取对应的CqExtUnit
+     */
     public ConsumeQueueExt.CqExtUnit getExt(final long offset) {
         if (isExtReadEnable()) {
             return this.consumeQueueExt.get(offset);
@@ -510,6 +553,9 @@ public class ConsumeQueue {
         return null;
     }
 
+    /**
+     * 根据offset从ext中获取对应位置，然后赋值给cqExtUnit
+     */
     public boolean getExt(final long offset, ConsumeQueueExt.CqExtUnit cqExtUnit) {
         if (isExtReadEnable()) {
             return this.consumeQueueExt.get(offset, cqExtUnit);
@@ -525,6 +571,9 @@ public class ConsumeQueue {
         this.minLogicOffset = minLogicOffset;
     }
 
+    /**
+     * 获取下一个mappedFile文件的起始位置
+     */
     public long rollNextFile(final long index) {
         int mappedFileSize = this.mappedFileSize;
         int totalUnitsInFile = mappedFileSize / CQ_STORE_UNIT_SIZE;

@@ -74,6 +74,8 @@ public interface MessageStore {
     PutMessageResult putMessages(final MessageExtBatch messageExtBatch);
 
     /**
+     * 根据topic+queueId查询指定从offset开始的消息(最多maxMsgNums条)
+     * 并使用消息过滤器进一步筛选。
      * Query at most <code>maxMsgNums</code> messages belonging to <code>topic</code> at <code>queueId</code> starting
      * from given <code>offset</code>. Resulting messages will further be screened using provided message filter.
      *
@@ -89,6 +91,7 @@ public interface MessageStore {
         final long offset, final int maxMsgNums, final MessageFilter messageFilter);
 
     /**
+     * 获取一个topic queue最大偏移量 --> mappedFileQueue.getMaxOffset() / CQ_STORE_UNIT_SIZE
      * Get maximum offset of the topic queue.
      *
      * @param topic Topic name.
@@ -98,6 +101,7 @@ public interface MessageStore {
     long getMaxOffsetInQueue(final String topic, final int queueId);
 
     /**
+     * 获取一个topic queue最小偏移量 --> minLogicOffset / CQ_STORE_UNIT_SIZE
      * Get the minimum offset of the topic queue.
      *
      * @param topic Topic name.
@@ -107,6 +111,7 @@ public interface MessageStore {
     long getMinOffsetInQueue(final String topic, final int queueId);
 
     /**
+     * 获取消息在CommitLog里的偏移量--即物理偏移量
      * Get the offset of the message in the commit log, which is also known as physical offset.
      *
      * @param topic Topic of the message to lookup.
@@ -117,6 +122,7 @@ public interface MessageStore {
     long getCommitLogOffsetInQueue(final String topic, final int queueId, final long consumeQueueOffset);
 
     /**
+     * 查询指定时间、指定topic、指定队列的物理偏移量
      * Look up the physical offset of the message whose store timestamp is as specified.
      *
      * @param topic Topic of the message.
@@ -127,6 +133,7 @@ public interface MessageStore {
     long getOffsetInQueueByTime(final String topic, final int queueId, final long timestamp);
 
     /**
+     * 根据commitLog偏移量查询消息
      * Look up the message by given commit log offset.
      *
      * @param commitLogOffset physical offset.
@@ -135,6 +142,7 @@ public interface MessageStore {
     MessageExt lookMessageByOffset(final long commitLogOffset);
 
     /**
+     * 根据commitLog偏移量获取对应的一条消息
      * Get one message from the specified commit log offset.
      *
      * @param commitLogOffset commit log offset.
@@ -143,6 +151,7 @@ public interface MessageStore {
     SelectMappedBufferResult selectOneMessageByOffset(final long commitLogOffset);
 
     /**
+     * 根据commitLog偏移量获取消息
      * Get one message from the specified commit log offset.
      *
      * @param commitLogOffset commit log offset.
@@ -152,6 +161,7 @@ public interface MessageStore {
     SelectMappedBufferResult selectOneMessageByOffset(final long commitLogOffset, final int msgSize);
 
     /**
+     * 获取store运行时信息
      * Get the running information of this store.
      *
      * @return message store running info.
@@ -159,6 +169,7 @@ public interface MessageStore {
     String getRunningDataInfo();
 
     /**
+     * 获取store运行时信息：包含不同的统计信息
      * Message store runtime information, which should generally contains various statistical information.
      *
      * @return runtime information of the message store in format of key-value pairs.
@@ -200,6 +211,7 @@ public interface MessageStore {
     long getEarliestMessageTime();
 
     /**
+     * 获取指定消息的存储时间
      * Get the store time of the message specified.
      *
      * @param topic message topic.
@@ -210,6 +222,7 @@ public interface MessageStore {
     long getMessageStoreTimeStamp(final String topic, final int queueId, final long consumeQueueOffset);
 
     /**
+     * 获取指定消息队列的消息总数
      * Get the total number of the messages in the specified queue.
      *
      * @param topic Topic
@@ -219,6 +232,7 @@ public interface MessageStore {
     long getMessageTotalInQueue(final String topic, final int queueId);
 
     /**
+     * 获取commitLog指定偏移量开始的 原始数据---用于替换
      * Get the raw commit log data starting from the given offset, which should used for replication purpose.
      *
      * @param offset starting offset.
@@ -227,6 +241,7 @@ public interface MessageStore {
     SelectMappedBufferResult getCommitLogData(final long offset);
 
     /**
+     * 添加数据到commitLog
      * Append data to commit log.
      *
      * @param startOffset starting offset.
@@ -236,11 +251,13 @@ public interface MessageStore {
     boolean appendToCommitLog(final long startOffset, final byte[] data);
 
     /**
+     * 手动删除文件
      * Execute file deletion manually.
      */
     void executeDeleteFilesManually();
 
     /**
+     * 根据指定的key来查询消息
      * Query messages by given key.
      *
      * @param topic topic of the message.
@@ -253,6 +270,7 @@ public interface MessageStore {
         final long end);
 
     /**
+     * 更新 HA master 地址
      * Update HA master address.
      *
      * @param newAddr new address.
@@ -260,6 +278,7 @@ public interface MessageStore {
     void updateHaMasterAddress(final String newAddr);
 
     /**
+     * 获取slave落后情况
      * Return how much the slave falls behind.
      *
      * @return number of bytes that slave falls behind.
@@ -267,6 +286,7 @@ public interface MessageStore {
     long slaveFallBehindMuch();
 
     /**
+     * 获取store当前时间戳
      * Return the current timestamp of the store.
      *
      * @return current time in milliseconds since 1970-01-01.
@@ -274,6 +294,7 @@ public interface MessageStore {
     long now();
 
     /**
+     * 清楚无用的topic
      * Clean unused topics.
      *
      * @param topics all valid topics.
@@ -282,11 +303,13 @@ public interface MessageStore {
     int cleanUnusedTopic(final Set<String> topics);
 
     /**
+     * 清楚过期的消息队列
      * Clean expired consume queues.
      */
     void cleanExpiredConsumerQueue();
 
     /**
+     * 检查指定的消息是否已经被置换出内存
      * Check if the given message has been swapped out of the memory.
      *
      * @param topic topic.
@@ -297,6 +320,7 @@ public interface MessageStore {
     boolean checkInDiskByConsumeOffset(final String topic, final int queueId, long consumeOffset);
 
     /**
+     * 获取存储到commitLog但是未分发到消息队列的消息
      * Get number of the bytes that have been stored in commit log and not yet dispatched to consume queue.
      *
      * @return number of the bytes to dispatch.
@@ -304,6 +328,7 @@ public interface MessageStore {
     long dispatchBehindBytes();
 
     /**
+     * 刷盘
      * Flush the message store to persist all data.
      *
      * @return maximum offset flushed to persistent storage device.
@@ -311,6 +336,7 @@ public interface MessageStore {
     long flush();
 
     /**
+     * 重置写入偏移量
      * Reset written offset.
      *
      * @param phyOffset new offset.
@@ -326,13 +352,14 @@ public interface MessageStore {
     long getConfirmOffset();
 
     /**
-     * Set confirm offset.
+     * 设置confirm offset
      *
      * @param phyOffset confirm offset to set.
      */
     void setConfirmOffset(long phyOffset);
 
     /**
+     * 检查操作系统 页缓存 是否忙碌
      * Check if the operation system page cache is busy or not.
      *
      * @return true if the OS page cache is busy; false otherwise.
@@ -340,6 +367,7 @@ public interface MessageStore {
     boolean isOSPageCacheBusy();
 
     /**
+     * 查询store锁住的时间(毫秒)
      * Get lock time in milliseconds of the store by far.
      *
      * @return lock time in milliseconds.
@@ -347,6 +375,7 @@ public interface MessageStore {
     long lockTimeMills();
 
     /**
+     * 检查 临时存储池 是否还有可用buffer
      * Check if the transient store pool is deficient.
      *
      * @return true if the transient store pool is running out; false otherwise.

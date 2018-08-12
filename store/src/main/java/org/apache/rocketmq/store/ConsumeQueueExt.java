@@ -39,19 +39,21 @@ import java.util.List;
 public class ConsumeQueueExt {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    // mappedFile文件夹
     private final MappedFileQueue mappedFileQueue;
     private final String topic;
     private final int queueId;
 
+    // 存储路径
     private final String storePath;
+    // 消息队列扩展文件默认文件大小
     private final int mappedFileSize;
+    // 临时容器
     private ByteBuffer tempContainer;
 
     public static final int END_BLANK_DATA_LENGTH = 4;
 
-    /**
-     * Addr can not exceed this value.For compatible.
-     */
+    // 为了兼容性，地址不能超过这个值。 Addr can not exceed this value.For compatible.
     public static final long MAX_ADDR = Integer.MIN_VALUE - 1L;
     public static final long MAX_REAL_OFFSET = MAX_ADDR - Long.MIN_VALUE;
 
@@ -90,6 +92,7 @@ public class ConsumeQueueExt {
     }
 
     /**
+     * 检查address是否指向扩展文件
      * Check whether {@code address} point to extend file.
      * <p>
      * Just test {@code address} is less than 0.
@@ -100,6 +103,7 @@ public class ConsumeQueueExt {
     }
 
     /**
+     *
      * Transform {@code address}(decorated by {@link #decorate}) to offset in mapped file.
      * <p>
      * if {@code address} is less than 0, return {@code address} - {@link java.lang.Long#MIN_VALUE};
@@ -179,6 +183,7 @@ public class ConsumeQueueExt {
     }
 
     /**
+     * 保存到文件的mapped buffer，返回 address -- 非线程安全
      * Save to mapped buffer of file and return address.
      * <p>
      * Be careful, this method is not thread safe.
@@ -236,6 +241,9 @@ public class ConsumeQueueExt {
         return 1;
     }
 
+    /**
+     * 填充mappedFile：从wrotePosition到end
+     */
     protected void fullFillToEnd(final MappedFile mappedFile, final int wrotePosition) {
         ByteBuffer mappedFileBuffer = mappedFile.sliceByteBuffer();
         mappedFileBuffer.position(wrotePosition);
@@ -247,6 +255,7 @@ public class ConsumeQueueExt {
     }
 
     /**
+     * 启动时，从文件中加载数据
      * Load data from file when startup.
      */
     public boolean load() {
@@ -405,6 +414,7 @@ public class ConsumeQueueExt {
     }
 
     /**
+     * 存储单元
      * Store unit.
      */
     public static class CqExtUnit {
@@ -426,28 +436,19 @@ public class ConsumeQueueExt {
             this.size = (short) (MIN_EXT_UNIT_SIZE + this.bitMapSize);
         }
 
-        /**
-         * unit size
-         */
+        // 存储单元大小
         private short size;
-        /**
-         * has code of tags
-         */
+        // has code of tags
         private long tagsCode;
-        /**
-         * the time to store into commit log of message
-         */
+        // the time to store into commit log of message
         private long msgStoreTime;
-        /**
-         * size of bit map
-         */
+        // bit map大小
         private short bitMapSize;
-        /**
-         * filter bit map
-         */
+        // filter bit map
         private byte[] filterBitMap;
 
         /**
+         *
          * build unit from buffer from current position.
          */
         private boolean read(final ByteBuffer buffer) {
@@ -478,6 +479,7 @@ public class ConsumeQueueExt {
         }
 
         /**
+         * 通过前两个byte获取存储单元大小
          * Only read first 2 byte to get unit size.
          * <p>
          * if size > 0, then skip buffer position with size.
@@ -498,6 +500,7 @@ public class ConsumeQueueExt {
         }
 
         /**
+         * 将unit data转为字节数组
          * Transform unit data to byte array.
          * <p/>
          * <li>1. @{code container} can be null, it will be created if null.</li>
@@ -529,6 +532,7 @@ public class ConsumeQueueExt {
         }
 
         /**
+         * 计算unit大小
          * Calculate unit size by current data.
          */
         private int calcUnitSize() {
