@@ -18,11 +18,6 @@ package org.apache.rocketmq.broker;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -44,6 +39,12 @@ import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
 public class BrokerStartup {
@@ -53,7 +54,14 @@ public class BrokerStartup {
     public static Logger log;
 
     public static void main(String[] args) {
-        System.setProperty("user.home", "E:\\rocketmq");
+        // 启动时需要配置ROCKETMQ_HOME
+        // 需要设定user.home
+        String os = System.getProperty("os.name");
+        if (os.startsWith("win")) {
+            System.setProperty("user.home", "E:\\rocketmq");
+        } else if (os.toLowerCase().startsWith("mac") || os.startsWith("linux")) {
+            System.setProperty("user.home", "/Users/" + System.getProperty("user.name") + "/work/code/RocketMQWithComment");
+        }
         start(createBrokerController(args));
     }
 
@@ -63,7 +71,7 @@ public class BrokerStartup {
             controller.start();
 
             String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", "
-                + controller.getBrokerAddr() + "] boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
+                    + controller.getBrokerAddr() + "] boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
 
             if (null != controller.getBrokerConfig().getNamesrvAddr()) {
                 tip += " and name server is " + controller.getBrokerConfig().getNamesrvAddr();
@@ -94,7 +102,7 @@ public class BrokerStartup {
             //PackageConflictDetect.detectFastjson();
             Options options = ServerUtil.buildCommandlineOptions(new Options());
             commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
-                new PosixParser());
+                    new PosixParser());
             if (null == commandLine) {
                 System.exit(-1);
             }
@@ -104,7 +112,7 @@ public class BrokerStartup {
             final NettyClientConfig nettyClientConfig = new NettyClientConfig();
 
             nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
-                String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
+                    String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
             nettyServerConfig.setListenPort(10911);
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
@@ -136,7 +144,7 @@ public class BrokerStartup {
 
             if (null == brokerConfig.getRocketmqHome()) {
                 System.out.printf("Please set the " + MixAll.ROCKETMQ_HOME_ENV
-                    + " variable in your environment to match the location of the RocketMQ installation");
+                        + " variable in your environment to match the location of the RocketMQ installation");
                 System.exit(-2);
             }
 
@@ -149,8 +157,8 @@ public class BrokerStartup {
                     }
                 } catch (Exception e) {
                     System.out.printf(
-                        "The Name Server Address[%s] illegal, please set it as follows, \"127.0.0.1:9876;192.168.0.1:9876\"%n",
-                        namesrvAddr);
+                            "The Name Server Address[%s] illegal, please set it as follows, \"127.0.0.1:9876;192.168.0.1:9876\"%n",
+                            namesrvAddr);
                     System.exit(-3);
                 }
             }
@@ -201,10 +209,10 @@ public class BrokerStartup {
             MixAll.printObjectProperties(log, messageStoreConfig);
 
             final BrokerController controller = new BrokerController(
-                brokerConfig,
-                nettyServerConfig,
-                nettyClientConfig,
-                messageStoreConfig);
+                    brokerConfig,
+                    nettyServerConfig,
+                    nettyClientConfig,
+                    messageStoreConfig);
             // remember all configs to prevent discard
             controller.getConfiguration().registerConfig(properties);
 

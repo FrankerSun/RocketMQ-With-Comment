@@ -43,7 +43,12 @@ public class NamesrvStartup {
     public static CommandLine commandLine = null;
 
     public static void main(String[] args) {
-        System.setProperty("user.home", "E:\\rocketmq");
+        String os = System.getProperty("os.name");
+        if (os.startsWith("win")) {
+            System.setProperty("user.home", "E:\\rocketmq");
+        } else if (os.toLowerCase().startsWith("mac") || os.startsWith("linux")) {
+            System.setProperty("user.home", "/Users/" + System.getProperty("user.name") + "/work/code/RocketMQWithComment");
+        }
         main0(args);
     }
 
